@@ -23,16 +23,16 @@ function statusOf(res: ReturnType<typeof computeEligibility>, id: string) {
 }
 
 describe('Federal Poverty Level table (public HHS data)', () => {
-  it('matches the published 2025 guidelines', () => {
-    expect(fplForHousehold(1)).toBe(15650);
-    expect(fplForHousehold(2)).toBe(21150);
-    expect(fplForHousehold(3)).toBe(26650);
-    expect(fplForHousehold(4)).toBe(32150);
+  it('matches the published 2026 guidelines', () => {
+    expect(fplForHousehold(1)).toBe(15960);
+    expect(fplForHousehold(2)).toBe(21640);
+    expect(fplForHousehold(3)).toBe(27320);
+    expect(fplForHousehold(4)).toBe(33000);
   });
 
   it('computes income as a percent of FPL', () => {
-    expect(fplPercent(26650, 3)).toBe(100);
-    expect(fplPercent(13325, 3)).toBe(50);
+    expect(fplPercent(27320, 3)).toBe(100);
+    expect(fplPercent(13660, 3)).toBe(50);
   });
 });
 
@@ -119,7 +119,7 @@ describe('uses current income, not last year (audit regression)', () => {
   });
 
   it('does not over-grant at the 138% boundary due to rounding', () => {
-    const fpl = 15650; // household of 1
+    const fpl = 15960; // household of 1 (2026)
     const justOverMonthly = Math.round((fpl * 1.384) / 12); // ~138.4% annualized → rounds to 138 but is over
     const res = computeEligibility(
       sit({ householdSize: 1, annualIncome: 0, currentMonthlyIncome: justOverMonthly, reason: 'other' }),

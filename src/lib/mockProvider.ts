@@ -118,10 +118,6 @@ function planCovers(plan: Plan, id: string): boolean {
   return plan.programs.some((p) => p.programId === id);
 }
 
-function planText(plan: Plan): string {
-  return JSON.stringify(plan).toLowerCase();
-}
-
 /** Only the text the plan AUTHORS (summary + urgent actions) — not program
  *  reason strings — so timing checks don't pass on words leaked from elsewhere. */
 function narrativeText(plan: Plan): string {
@@ -139,7 +135,10 @@ export const mockProvider: NavigatorProvider = {
 
   async grade(input: GradeInput): Promise<CriterionResult[]> {
     const { ground, plan } = input;
-    const text = planText(plan);
+    // Scan only the plan's OWN narrative (summary + urgent actions) for these
+    // text checks — NOT the full plan JSON — so keywords can't leak in from
+    // engine-authored program reason strings and produce a false pass.
+    const narrative = narrativeText(plan);
     const recommended = ground.matches.filter((m) => ground.recommended.includes(m.id));
     const covered = recommended.filter((m) => planCovers(plan, m.id));
     const completeness = recommended.length ? covered.length / recommended.length : 1;
@@ -150,16 +149,14 @@ export const mockProvider: NavigatorProvider = {
     const incomeDropOk =
       !needsIncomeDrop ||
       (planCovers(plan, 'medi_cal_adults') &&
-        text.includes('current') &&
-        text.includes('month'));
+        narrative.includes('current') &&
+        narrative.includes('month'));
 
     const needsDeadline = ground.flags.includes('sep_60_day');
-    const deadlineOk = !needsDeadline || text.includes('60') || text.includes('special enrollment');
+    const deadlineOk = !needsDeadline || narrative.includes('60') || narrative.includes('special enrollment');
 
-    // Realistic timing: scan only the plan's OWN narrative (not program reasons),
-    // must not claim "immediate" coverage, and must set expectations.
-    const narrative = narrativeText(plan);
-    const overstates = /\b(immediately|instant)\b/.test(narrative);
+    // Realistic timing: must not claim "immediate" coverage, and must set expectations.
+    const overstates = /\b(immediate(ly)?|instant(ly|aneous)?|right away|same.?day coverage)\b/.test(narrative);
     const setsTimeline =
       /(approval can take|takes? (a few |~)?weeks?|up to ~?45 days|backdat|retroactive|in the meantime|while you wait)/.test(
         narrative,

@@ -709,10 +709,16 @@ function ResourceActionList({ resources, mock }: { resources: HelpResource[]; mo
   const pct = resources.length ? Math.round((done.size / resources.length) * 100) : 0;
   return (
     <>
-      <div className="ap-progress">
-        <div className="ap-bar" style={{ width: `${pct}%` }} />
-      </div>
-      <div className="ap-foot">{done.size} of {resources.length} contacted</div>
+      {/* The check-off controls are hidden for sample/mock data, so don't show a
+          progress bar that could never advance. */}
+      {!mock && (
+        <>
+          <div className="ap-progress">
+            <div className="ap-bar" style={{ width: `${pct}%` }} />
+          </div>
+          <div className="ap-foot">{done.size} of {resources.length} contacted</div>
+        </>
+      )}
       {resources.map((res, i) => (
         <ResourceCard key={i} r={res} mock={mock} done={done.has(i)} onToggle={() => toggle(i)} />
       ))}

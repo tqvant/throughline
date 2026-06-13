@@ -2,23 +2,27 @@
 // Department of Health & Human Services (HHS).
 // Source: https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines
 //
-// These are the 2025 HHS Poverty Guidelines for the 48 contiguous states + DC.
-// They are the most recently verified official figures and — importantly — the
-// marketplace (ACA) uses the PRIOR year's guidelines to determine subsidy
-// eligibility for a coverage year, so 2025 figures are exactly what governs
-// 2026 Covered California / marketplace determinations.
+// These are the 2026 HHS Poverty Guidelines for the 48 contiguous states + DC,
+// published in the Federal Register on Jan 15, 2026 (verified against
+// aspe.hhs.gov). Medi-Cal / Medicaid (MAGI) uses the CURRENT-year guidelines, so
+// 2026 figures govern Medi-Cal eligibility as of 2026.
 //
-// To update: replace EFFECTIVE_YEAR, BASE, and PER_ADDITIONAL_PERSON with the
-// new official numbers. Everything downstream recomputes automatically. This is
-// the single source of truth for all dollar thresholds in the app.
+// Nuance: the ACA marketplace uses the PRIOR year's guidelines for a coverage
+// year (so 2026 Covered California subsidies technically reference the 2025
+// table). We use this single 2026 table for both; the only effect is a ~2%
+// shift at the very top (400% FPL) marketplace boundary — Medi-Cal, the
+// higher-stakes pathway, is exact. (A future refinement could carry both tables.)
+//
+// To update next year: replace EFFECTIVE_YEAR, BASE, and PER_ADDITIONAL_PERSON
+// with the new official numbers. Everything downstream recomputes automatically.
 
-export const EFFECTIVE_YEAR = 2025;
+export const EFFECTIVE_YEAR = 2026;
 export const FPL_SOURCE =
-  'HHS 2025 Poverty Guidelines (48 contiguous states + DC), aspe.hhs.gov';
+  'HHS 2026 Poverty Guidelines (48 contiguous states + DC), aspe.hhs.gov';
 
-// 2025 guidelines: 1-person household = $15,650, +$5,500 per additional person.
-const BASE_ONE_PERSON = 15650;
-const PER_ADDITIONAL_PERSON = 5500;
+// 2026 guidelines: 1-person household = $15,960, +$5,680 per additional person.
+const BASE_ONE_PERSON = 15960;
+const PER_ADDITIONAL_PERSON = 5680;
 
 /** Annual Federal Poverty Level for a given household size. */
 export function fplForHousehold(householdSize: number): number {

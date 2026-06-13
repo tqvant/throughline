@@ -55,7 +55,7 @@ export const PROGRAMS: Program[] = [
       }
       return {
         status: 'not_eligible',
-        reason: `Your current income (~${ctx.currentMonthlyFplPercent}% of FPL) is above the 138% adult cutoff — Medi-Cal uses current income, so subsidized marketplace coverage is the better path.`,
+        reason: `Your current income is above the 138% adult Medi-Cal cutoff — Medi-Cal uses current income, so subsidized marketplace coverage is the better path for you.`,
       };
     },
   },
@@ -118,7 +118,7 @@ export const PROGRAMS: Program[] = [
       }
       return {
         status: 'likely_eligible',
-        reason: `Income is above 400% of FPL; you can still enroll, and enhanced subsidies (if in effect) can cap your premium near 8.5% of income. Worth pricing out.`,
+        reason: `Income is above 400% of FPL. You can still enroll at full price; whether any premium subsidy applies above 400% depends on the rules in effect for your coverage year, so it's worth pricing out at CoveredCA.com.`,
       };
     },
   },

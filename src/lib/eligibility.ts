@@ -76,7 +76,7 @@ export function computeEligibility(
   }
 
   return {
-    state: situation.state,
+    state: (situation.state || '').toUpperCase(),
     fpl: {
       effectiveYear: EFFECTIVE_YEAR,
       source: FPL_SOURCE,
