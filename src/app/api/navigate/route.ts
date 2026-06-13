@@ -5,7 +5,7 @@ import { getTelemetry, resetTelemetry } from '@/lib/telemetry';
 import type { NavigatorProvider, Reason, Situation } from '@/lib/types';
 
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const REASONS: Reason[] = ['job_loss', 'reduced_hours', 'aging_out', 'other'];
 
@@ -42,12 +42,8 @@ export async function POST(req: Request) {
   try {
     const situation = normalize(body.situation);
 
-    // Real Opus full-plan generation runs 45-115s — over the 60s serverless
-    // function limit on this Vercel plan. So the DEPLOYED plan mode defaults to
-    // the instant deterministic provider (honestly labeled as demo data in the
-    // UI). Real Opus 4.8 runs without a time cap via `npm run eval`, the MCP
-    // server, and local dev; opt into it here with {"live": true}.
-    const useMock = body.mock === true || body.live !== true || !process.env.ANTHROPIC_API_KEY;
+    // Real Opus 4.8 when a key is set; deterministic mock otherwise.
+    const useMock = body.mock === true || !process.env.ANTHROPIC_API_KEY;
     let provider: NavigatorProvider;
     if (useMock) {
       provider = mockProvider;
@@ -57,7 +53,7 @@ export async function POST(req: Request) {
     }
 
     resetTelemetry();
-    const result = await runNavigator(situation, provider, { maxIterations: useMock ? 3 : 2 });
+    const result = await runNavigator(situation, provider, { maxIterations: 3 });
     return NextResponse.json({ ...result, telemetry: getTelemetry(), usedMock: useMock });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
