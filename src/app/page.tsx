@@ -25,14 +25,15 @@ export default function Page() {
   const [mode, setMode] = useState<'plan' | 'now'>('plan');
   const [admin, setAdmin] = useState(false);
   const [lang, setLang] = useState('en');
-  // Instant-demo mode forces the deterministic loop (no live Opus/web latency) —
-  // ideal for recording a snappy video of the self-correcting score climb.
-  const [demo, setDemo] = useState(false);
+  // Default = instant deterministic loop (fast, reliable; real eligibility math +
+  // real national resources). "Live AI" opts into real Opus 4.8 + live web search,
+  // which is powerful but takes ~1 minute per request.
+  const [live, setLive] = useState(false);
 
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     if (p.has('admin')) setAdmin(true);
-    if (p.has('demo')) setDemo(true);
+    if (p.has('live')) setLive(true);
   }, []);
 
   return (
@@ -78,15 +79,15 @@ export default function Page() {
       </div>
 
       {mode === 'plan' ? (
-        <PlanCoverage admin={admin} lang={lang} demo={demo} />
+        <PlanCoverage admin={admin} lang={lang} live={live} />
       ) : (
-        <FindCareNow admin={admin} lang={lang} demo={demo} />
+        <FindCareNow admin={admin} lang={lang} live={live} />
       )}
 
       <div className="footer">
         <span>Built at Claude Build Day · benefits navigation, not medical advice.</span>
-        <button className={`demo-toggle ${demo ? 'on' : ''}`} onClick={() => setDemo((d) => !d)}>
-          {demo ? '⚡ Instant demo: ON' : 'Instant demo: off'}
+        <button className={`demo-toggle ${live ? 'on' : ''}`} onClick={() => setLive((l) => !l)} title="Use real Opus 4.8 + live web search (slower, ~1 min)">
+          {live ? '⚡ Live AI: ON (~1 min)' : 'Live AI: off · instant'}
         </button>
       </div>
     </div>
@@ -173,10 +174,12 @@ function buildActions(plan: Plan): ConciergeAction[] {
 }
 
 const KIND_ICON: Record<ConciergeAction['kind'], string> = { apply: '📝', message: '✉️', call: '📞' };
+const ACTION_KIND_LABEL: Record<ConciergeAction['kind'], string> = { apply: '📝 apply', message: '✉️ send', call: '📞 call' };
 
 function ActionPlan({ plan }: { plan: Plan }) {
   const actions = useMemo(() => buildActions(plan), [plan]);
   const [done, setDone] = useState<Set<string>>(new Set());
+  const [kindFilter, setKindFilter] = useState<'all' | ConciergeAction['kind']>('all');
   const toggle = (id: string) =>
     setDone((d) => {
       const n = new Set(d);
@@ -185,6 +188,13 @@ function ActionPlan({ plan }: { plan: Plan }) {
       return n;
     });
   const pct = actions.length ? Math.round((done.size / actions.length) * 100) : 0;
+
+  const kinds = useMemo(() => {
+    const s: ConciergeAction['kind'][] = [];
+    for (const a of actions) if (!s.includes(a.kind)) s.push(a.kind);
+    return s;
+  }, [actions]);
+  const shown = kindFilter === 'all' ? actions : actions.filter((a) => a.kind === kindFilter);
 
   return (
     <>
@@ -195,7 +205,19 @@ function ActionPlan({ plan }: { plan: Plan }) {
       <div className="ap-foot">
         {done.size} of {actions.length} done · review each, then submit or call yourself
       </div>
-      {actions.map((a) => (
+      {kinds.length > 1 && (
+        <div className="filter-row">
+          <button className={`chip ${kindFilter === 'all' ? 'on' : ''}`} onClick={() => setKindFilter('all')}>
+            All
+          </button>
+          {kinds.map((k) => (
+            <button key={k} className={`chip ${kindFilter === k ? 'on' : ''}`} onClick={() => setKindFilter(k)}>
+              {ACTION_KIND_LABEL[k]}
+            </button>
+          ))}
+        </div>
+      )}
+      {shown.map((a) => (
         <div className={`act ${done.has(a.id) ? 'act-done' : ''}`} key={a.id}>
           <input type="checkbox" className="act-check" checked={done.has(a.id)} onChange={() => toggle(a.id)} />
           <div className="act-body">
@@ -363,7 +385,7 @@ const BLANK: FormState = {
   notes: '',
 };
 
-function PlanCoverage({ admin, lang, demo }: { admin: boolean; lang: string; demo: boolean }) {
+function PlanCoverage({ admin, lang, live }: { admin: boolean; lang: string; live: boolean }) {
   const [form, setForm] = useState<FormState>(DEMO_STORY);
   const [result, setResult] = useState<PlanApiResult | null>(null);
   const r = useReveal<Iteration>();
@@ -373,12 +395,12 @@ function PlanCoverage({ admin, lang, demo }: { admin: boolean; lang: string; dem
     if (!r.canStart()) return; // guard against double-click / overlapping runs
     r.reset();
     setResult(null);
-    r.setStatus('Opus 4.8 is building your plan…');
+    r.setStatus(live ? 'Live Opus 4.8 is building your plan — this takes about a minute…' : 'Building your plan…');
     try {
       const res = await fetch('/api/navigate', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ situation: { ...form, language: lang }, mock: demo }),
+        body: JSON.stringify({ situation: { ...form, language: lang }, mock: !live }),
       });
       const data = (await res.json()) as PlanApiResult & { error?: string };
       if (!res.ok || data.error) throw new Error(data.error || `Request failed (${res.status})`);
@@ -586,7 +608,7 @@ const KIND_LABELS: Record<string, string> = {
   other: 'resource',
 };
 
-function FindCareNow({ admin, lang, demo }: { admin: boolean; lang: string; demo: boolean }) {
+function FindCareNow({ admin, lang, live }: { admin: boolean; lang: string; live: boolean }) {
   const [form, setForm] = useState<HelpForm>(HELP_DEMO);
   const [result, setResult] = useState<HelpApiResult | null>(null);
   const r = useReveal<HelpIteration>();
@@ -596,12 +618,12 @@ function FindCareNow({ admin, lang, demo }: { admin: boolean; lang: string; demo
     if (!r.canStart()) return; // guard against double-click / overlapping runs
     r.reset();
     setResult(null);
-    r.setStatus('Opus 4.8 is searching the web for care near you…');
+    r.setStatus(live ? 'Live Opus 4.8 is searching the web — this takes about a minute…' : 'Finding care near you…');
     try {
       const res = await fetch('/api/find-help', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ input: { ...form, language: lang }, mock: demo }),
+        body: JSON.stringify({ input: { ...form, language: lang }, mock: !live }),
       });
       const data = (await res.json()) as HelpApiResult & { error?: string };
       if (!res.ok || data.error) throw new Error(data.error || `Request failed (${res.status})`);
