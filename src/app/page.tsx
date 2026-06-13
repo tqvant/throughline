@@ -25,9 +25,14 @@ export default function Page() {
   const [mode, setMode] = useState<'plan' | 'now'>('plan');
   const [admin, setAdmin] = useState(false);
   const [lang, setLang] = useState('en');
+  // Instant-demo mode forces the deterministic loop (no live Opus/web latency) —
+  // ideal for recording a snappy video of the self-correcting score climb.
+  const [demo, setDemo] = useState(false);
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).has('admin')) setAdmin(true);
+    const p = new URLSearchParams(window.location.search);
+    if (p.has('admin')) setAdmin(true);
+    if (p.has('demo')) setDemo(true);
   }, []);
 
   return (
@@ -72,10 +77,17 @@ export default function Page() {
         </button>
       </div>
 
-      {mode === 'plan' ? <PlanCoverage admin={admin} lang={lang} /> : <FindCareNow admin={admin} lang={lang} />}
+      {mode === 'plan' ? (
+        <PlanCoverage admin={admin} lang={lang} demo={demo} />
+      ) : (
+        <FindCareNow admin={admin} lang={lang} demo={demo} />
+      )}
 
       <div className="footer">
         <span>Built at Claude Build Day · benefits navigation, not medical advice.</span>
+        <button className={`demo-toggle ${demo ? 'on' : ''}`} onClick={() => setDemo((d) => !d)}>
+          {demo ? '⚡ Instant demo: ON' : 'Instant demo: off'}
+        </button>
       </div>
     </div>
   );
@@ -351,7 +363,7 @@ const BLANK: FormState = {
   notes: '',
 };
 
-function PlanCoverage({ admin, lang }: { admin: boolean; lang: string }) {
+function PlanCoverage({ admin, lang, demo }: { admin: boolean; lang: string; demo: boolean }) {
   const [form, setForm] = useState<FormState>(DEMO_STORY);
   const [result, setResult] = useState<PlanApiResult | null>(null);
   const r = useReveal<Iteration>();
@@ -366,7 +378,7 @@ function PlanCoverage({ admin, lang }: { admin: boolean; lang: string }) {
       const res = await fetch('/api/navigate', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ situation: { ...form, language: lang } }),
+        body: JSON.stringify({ situation: { ...form, language: lang }, mock: demo }),
       });
       const data = (await res.json()) as PlanApiResult & { error?: string };
       if (!res.ok || data.error) throw new Error(data.error || `Request failed (${res.status})`);
@@ -575,7 +587,7 @@ const KIND_LABELS: Record<string, string> = {
   other: 'resource',
 };
 
-function FindCareNow({ admin, lang }: { admin: boolean; lang: string }) {
+function FindCareNow({ admin, lang, demo }: { admin: boolean; lang: string; demo: boolean }) {
   const [form, setForm] = useState<HelpForm>(HELP_DEMO);
   const [result, setResult] = useState<HelpApiResult | null>(null);
   const r = useReveal<HelpIteration>();
@@ -590,7 +602,7 @@ function FindCareNow({ admin, lang }: { admin: boolean; lang: string }) {
       const res = await fetch('/api/find-help', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ input: { ...form, language: lang } }),
+        body: JSON.stringify({ input: { ...form, language: lang }, mock: demo }),
       });
       const data = (await res.json()) as HelpApiResult & { error?: string };
       if (!res.ok || data.error) throw new Error(data.error || `Request failed (${res.status})`);
