@@ -87,6 +87,7 @@ export async function runFindHelp(
   let i = 1;
   while (!grade.pass && i < maxIterations) {
     const failures = grade.criteria.filter((c) => !c.passed);
+    if (failures.length === 0) break; // nothing actionable — avoid a no-op repair
     ({ resources } = await finder.repair({ input, previous: resources, failures }));
     grade = scoreGrade(await finder.grade({ input, resources }), HELP_RUBRIC);
     iterations.push({ index: i, label: `Self-repair pass ${i}`, resources, grade });

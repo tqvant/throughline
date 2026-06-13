@@ -22,13 +22,17 @@ const PER_ADDITIONAL_PERSON = 5500;
 
 /** Annual Federal Poverty Level for a given household size. */
 export function fplForHousehold(householdSize: number): number {
-  const size = Math.max(1, Math.floor(householdSize));
+  const raw = Number.isFinite(householdSize) ? householdSize : 1;
+  // Clamp to a sane range so a huge/garbage household size can't produce a
+  // non-finite FPL (which would serialize to null over the API).
+  const size = Math.min(50, Math.max(1, Math.floor(raw)));
   return BASE_ONE_PERSON + (size - 1) * PER_ADDITIONAL_PERSON;
 }
 
 /** Income as a percentage of the FPL for that household size (rounded). */
 export function fplPercent(annualIncome: number, householdSize: number): number {
   const fpl = fplForHousehold(householdSize);
+  const income = Number.isFinite(annualIncome) ? Math.max(0, annualIncome) : 0;
   if (fpl <= 0) return 0;
-  return Math.round((Math.max(0, annualIncome) / fpl) * 100);
+  return Math.round((income / fpl) * 100);
 }

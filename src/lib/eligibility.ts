@@ -32,8 +32,16 @@ export function computeEligibility(
   const annualFplPercent = fplPercent(situation.annualIncome, situation.householdSize);
   const currentAnnualized = situation.currentMonthlyIncome * 12;
   const currentMonthlyFplPercent = fplPercent(currentAnnualized, situation.householdSize);
+  // Unrounded ratios drive threshold DECISIONS (avoids rounding 138.4% -> 138).
+  const annualFplRatio = fpl > 0 ? Math.max(0, situation.annualIncome) / fpl : 0;
+  const currentMonthlyFplRatio = fpl > 0 ? Math.max(0, currentAnnualized) / fpl : 0;
 
-  const ctx: ProgramContext = { annualFplPercent, currentMonthlyFplPercent };
+  const ctx: ProgramContext = {
+    annualFplPercent,
+    currentMonthlyFplPercent,
+    annualFplRatio,
+    currentMonthlyFplRatio,
+  };
 
   const matches: ProgramMatch[] = PROGRAMS.map((p) => {
     const evaluation = p.evaluate(situation, ctx);
@@ -55,10 +63,7 @@ export function computeEligibility(
   // The single most important — and most missed — fact for the newly laid off:
   // they qualify for Medicaid NOW based on current monthly income, even though
   // last year's salary was well above the cutoff.
-  if (
-    currentMonthlyFplPercent <= 138 &&
-    annualFplPercent > 138
-  ) {
+  if (currentMonthlyFplRatio <= 1.38 && annualFplRatio > 1.38) {
     flags.push('medicaid_income_drop_pathway');
   }
 

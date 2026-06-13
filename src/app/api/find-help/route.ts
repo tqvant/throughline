@@ -9,18 +9,27 @@ export const maxDuration = 60;
 
 function normalize(raw: unknown): FindHelpInput {
   const b = (raw ?? {}) as Record<string, unknown>;
-  const str = (v: unknown, d = '') => (typeof v === 'string' ? v.slice(0, 300) : d);
+  const str = (v: unknown, d = '') => {
+    const s = typeof v === 'string' ? v.trim().slice(0, 300) : '';
+    return s || d;
+  };
   return {
-    location: str(b.location, 'California') || 'California',
+    location: str(b.location, 'California'),
     need: str(b.need, 'urgent care while uninsured'),
     notes: typeof b.notes === 'string' ? b.notes.slice(0, 500) : undefined,
-    language: typeof b.language === 'string' ? b.language : undefined,
+    language: typeof b.language === 'string' ? b.language.slice(0, 10) : undefined,
   };
 }
 
 export async function POST(req: Request) {
+  let body: { input?: unknown; mock?: boolean };
   try {
-    const body = (await req.json()) as { input?: unknown; mock?: boolean };
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid or empty JSON body' }, { status: 400 });
+  }
+  if (typeof body !== 'object' || body === null) body = {};
+  try {
     const input = normalize(body.input);
 
     const useMock = body.mock === true || !process.env.ANTHROPIC_API_KEY;

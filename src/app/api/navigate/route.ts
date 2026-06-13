@@ -16,23 +16,30 @@ function normalize(raw: unknown): Situation {
     return Number.isFinite(n) ? n : d;
   };
   const reason = REASONS.includes(b.reason as Reason) ? (b.reason as Reason) : 'job_loss';
+  const money = (v: unknown) => Math.min(1e9, Math.max(0, num(v))); // cap to keep FPL math finite
   return {
     state: typeof b.state === 'string' && b.state ? b.state.toUpperCase().slice(0, 2) : 'CA',
-    householdSize: Math.max(1, Math.round(num(b.householdSize, 1))),
-    annualIncome: Math.max(0, num(b.annualIncome)),
-    currentMonthlyIncome: Math.max(0, num(b.currentMonthlyIncome)),
+    householdSize: Math.min(50, Math.max(1, Math.round(num(b.householdSize, 1)))),
+    annualIncome: money(b.annualIncome),
+    currentMonthlyIncome: money(b.currentMonthlyIncome),
     reason,
     hasChildren: Boolean(b.hasChildren),
     pregnant: Boolean(b.pregnant),
-    lostCoverageDate: typeof b.lostCoverageDate === 'string' ? b.lostCoverageDate : undefined,
+    lostCoverageDate: typeof b.lostCoverageDate === 'string' ? b.lostCoverageDate.slice(0, 40) : undefined,
     notes: typeof b.notes === 'string' ? b.notes.slice(0, 500) : undefined,
-    language: typeof b.language === 'string' ? b.language : undefined,
+    language: typeof b.language === 'string' ? b.language.slice(0, 10) : undefined,
   };
 }
 
 export async function POST(req: Request) {
+  let body: { situation?: unknown; mock?: boolean };
   try {
-    const body = (await req.json()) as { situation?: unknown; mock?: boolean };
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid or empty JSON body' }, { status: 400 });
+  }
+  if (typeof body !== 'object' || body === null) body = {};
+  try {
     const situation = normalize(body.situation);
 
     const useMock = body.mock === true || !process.env.ANTHROPIC_API_KEY;

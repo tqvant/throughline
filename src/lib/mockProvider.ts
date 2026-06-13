@@ -122,6 +122,14 @@ function planText(plan: Plan): string {
   return JSON.stringify(plan).toLowerCase();
 }
 
+/** Only the text the plan AUTHORS (summary + urgent actions) — not program
+ *  reason strings — so timing checks don't pass on words leaked from elsewhere. */
+function narrativeText(plan: Plan): string {
+  return [plan.summary, ...plan.urgentActions.map((a) => `${a.title} ${a.why} ${a.deadline ?? ''}`)]
+    .join(' ')
+    .toLowerCase();
+}
+
 export const mockProvider: NavigatorProvider = {
   name: 'mock:deterministic',
 
@@ -148,9 +156,14 @@ export const mockProvider: NavigatorProvider = {
     const needsDeadline = ground.flags.includes('sep_60_day');
     const deadlineOk = !needsDeadline || text.includes('60') || text.includes('special enrollment');
 
-    // Realistic timing: must not claim "immediate" coverage; must set expectations.
-    const overstates = text.includes('immediately') || text.includes('instant');
-    const setsTimeline = /week|backdat|retroactive|45 day|in the meantime|bridge/.test(text);
+    // Realistic timing: scan only the plan's OWN narrative (not program reasons),
+    // must not claim "immediate" coverage, and must set expectations.
+    const narrative = narrativeText(plan);
+    const overstates = /\b(immediately|instant)\b/.test(narrative);
+    const setsTimeline =
+      /(approval can take|takes? (a few |~)?weeks?|up to ~?45 days|backdat|retroactive|in the meantime|while you wait)/.test(
+        narrative,
+      );
     const timelineOk = !overstates && setsTimeline;
 
     const actionable = plan.programs.every(

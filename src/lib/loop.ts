@@ -33,6 +33,9 @@ export async function runNavigator(
   let i = 1;
   while (!grade.pass && i < maxIterations) {
     const failed = failures(grade);
+    // Nothing actionable to repair (e.g. low overall score but every criterion
+    // marked passed) — don't burn an iteration on a no-op repair.
+    if (failed.length === 0) break;
     plan = await provider.repair({ situation, previousPlan: plan, failures: failed });
     grade = scoreGrade(await provider.grade({ situation, ground, plan }), rubric);
     iterations.push({ index: i, label: `Self-repair pass ${i}`, plan, grade });

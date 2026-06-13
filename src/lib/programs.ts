@@ -12,8 +12,13 @@ import type {
 } from './types';
 
 export interface ProgramContext {
+  /** Rounded, for display in reasons. */
   annualFplPercent: number;
   currentMonthlyFplPercent: number;
+  /** Unrounded ratio (income / FPL), for threshold DECISIONS — avoids rounding
+   *  138.4% down to 138 and over-granting at the cutoff. */
+  annualFplRatio: number;
+  currentMonthlyFplRatio: number;
 }
 
 export interface ProgramEvaluation {
@@ -40,21 +45,17 @@ export const PROGRAMS: Program[] = [
     name: 'Medi-Cal (Medicaid) — adults',
     category: 'medicaid',
     evaluate: (_s, ctx) => {
-      if (ctx.currentMonthlyFplPercent <= MEDICAID_ADULT) {
+      // Medi-Cal (MAGI) is determined by CURRENT income only — never last
+      // year's salary. (Do NOT fall back to annual income here.)
+      if (ctx.currentMonthlyFplRatio <= MEDICAID_ADULT / 100) {
         return {
           status: 'eligible',
           reason: `Your CURRENT monthly income is about ${ctx.currentMonthlyFplPercent}% of the Federal Poverty Level, at or under the 138% cutoff. Medi-Cal looks at income right now — not last year's salary — so you very likely qualify for $0 coverage. Apply now: approval can take a few weeks, but coverage can be backdated up to ~3 months (2026) if you were eligible then, and community clinics can see you in the meantime.`,
         };
       }
-      if (ctx.annualFplPercent <= MEDICAID_ADULT) {
-        return {
-          status: 'eligible',
-          reason: `Household income (~${ctx.annualFplPercent}% of the Federal Poverty Level) is at or under the 138% cutoff for adult Medi-Cal.`,
-        };
-      }
       return {
         status: 'not_eligible',
-        reason: `Current income (~${ctx.currentMonthlyFplPercent}% of FPL) is above the 138% adult cutoff, so subsidized marketplace coverage is the better path.`,
+        reason: `Your current income (~${ctx.currentMonthlyFplPercent}% of FPL) is above the 138% adult cutoff — Medi-Cal uses current income, so subsidized marketplace coverage is the better path.`,
       };
     },
   },
@@ -66,7 +67,7 @@ export const PROGRAMS: Program[] = [
       if (!s.hasChildren) {
         return { status: 'not_eligible', reason: 'No children in the household.' };
       }
-      if (ctx.currentMonthlyFplPercent <= MEDICAID_KIDS) {
+      if (ctx.currentMonthlyFplRatio <= MEDICAID_KIDS / 100) {
         return {
           status: 'eligible',
           reason: `Children qualify for Medi-Cal up to 266% of the Federal Poverty Level — a much higher cutoff than for adults — and your income (~${ctx.currentMonthlyFplPercent}% of FPL) is under it. Kids can be covered even if the parents are not.`,
@@ -86,7 +87,7 @@ export const PROGRAMS: Program[] = [
       if (!s.pregnant) {
         return { status: 'not_eligible', reason: 'Not applicable.' };
       }
-      if (ctx.currentMonthlyFplPercent <= MEDICAID_PREGNANCY) {
+      if (ctx.currentMonthlyFplRatio <= MEDICAID_PREGNANCY / 100) {
         return {
           status: 'eligible',
           reason: `Pregnancy-related Medi-Cal covers income up to 213% of the Federal Poverty Level (~${ctx.currentMonthlyFplPercent}% here).`,
@@ -103,13 +104,13 @@ export const PROGRAMS: Program[] = [
     name: 'Covered California (ACA marketplace) with subsidies',
     category: 'marketplace',
     evaluate: (_s, ctx) => {
-      if (ctx.currentMonthlyFplPercent <= MEDICAID_ADULT) {
+      if (ctx.currentMonthlyFplRatio <= MEDICAID_ADULT / 100) {
         return {
           status: 'maybe',
-          reason: 'Below 138% FPL, marketplace subsidies generally do not apply because free Medi-Cal covers you. Keep this as a fallback only if you decline Medi-Cal.',
+          reason: 'With your current income at/under 138% FPL, marketplace subsidies generally do not apply because free Medi-Cal covers you. Keep this as a fallback only if you decline Medi-Cal.',
         };
       }
-      if (ctx.annualFplPercent <= MARKETPLACE_SUBSIDY_CEILING) {
+      if (ctx.annualFplRatio <= MARKETPLACE_SUBSIDY_CEILING / 100) {
         return {
           status: 'eligible',
           reason: `Projected annual income (~${ctx.annualFplPercent}% of FPL) is in the 138–400% range for premium subsidies. Losing job-based coverage opens a Special Enrollment Period to sign up now.`,
@@ -135,10 +136,10 @@ export const PROGRAMS: Program[] = [
     name: 'County health program (medically indigent)',
     category: 'safety_net',
     evaluate: (_s, ctx) => {
-      if (ctx.currentMonthlyFplPercent > MEDICAID_ADULT) {
+      if (ctx.currentMonthlyFplRatio > MEDICAID_ADULT / 100) {
         return {
           status: 'likely_eligible',
-          reason: 'If you fall between Medi-Cal and affordable marketplace coverage, county medically-indigent programs can bridge the gap. Eligibility is set locally.',
+          reason: 'If you fall between Medi-Cal and affordable marketplace coverage, county medically-indigent programs can help. Eligibility is set locally.',
         };
       }
       return {

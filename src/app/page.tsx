@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { LANGUAGES, t } from '@/lib/i18n';
 import type {
   CriterionResult,
@@ -141,14 +141,17 @@ function buildActions(plan: Plan): ConciergeAction[] {
   });
   if (plan.appointmentRequest) {
     const a = plan.appointmentRequest;
+    // Only build a real mailto when we actually have an email recipient;
+    // otherwise it's a copy-the-message action (no broken empty-recipient mailto).
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a.to.trim());
     acts.push({
       id: 'appt',
       kind: 'message',
       title: `Send: ${a.subject}`,
       detail: `To: ${a.to}`,
       payload: a.body,
-      href: `mailto:?subject=${encodeURIComponent(a.subject)}&body=${encodeURIComponent(a.body)}`,
-      hrefLabel: 'Open email',
+      href: isEmail ? `mailto:${encodeURIComponent(a.to.trim())}?subject=${encodeURIComponent(a.subject)}&body=${encodeURIComponent(a.body)}` : undefined,
+      hrefLabel: isEmail ? 'Open email' : undefined,
     });
   }
   plan.scripts.forEach((s, i) =>
@@ -270,27 +273,41 @@ function useReveal<T extends { grade: { overall: number; pass: boolean; criteria
   const [score, setScore] = useState(0);
   const [done, setDone] = useState(false);
 
+  const busy = useRef(false);
+  const runId = useRef(0);
+
+  const canStart = () => !busy.current;
   const reset = () => {
+    busy.current = true;
+    runId.current += 1;
     setRunning(true);
     setError('');
     setRevealed([]);
     setScore(0);
     setDone(false);
   };
+  const stop = () => {
+    busy.current = false;
+    setRunning(false);
+  };
 
   async function play(iters: T[], labelFor: (k: number, prev?: T) => string) {
+    const myRun = runId.current;
     for (let k = 0; k < iters.length; k++) {
+      if (runId.current !== myRun) return; // superseded by a newer run
       setStatus(labelFor(k, iters[k - 1]));
       await delay(k === 0 ? 1100 : 1500);
+      if (runId.current !== myRun) return;
       setRevealed((p) => [...p, iters[k]]);
       setScore(iters[k].grade.overall);
       await delay(900);
     }
+    if (runId.current !== myRun) return;
     setStatus('');
     setDone(true);
   }
 
-  return { running, setRunning, status, setStatus, error, setError, revealed, score, done, reset, play };
+  return { running, canStart, stop, status, setStatus, error, setError, revealed, score, done, reset, play };
 }
 
 /* ====================== Plan my coverage ======================= */
@@ -341,6 +358,7 @@ function PlanCoverage({ admin, lang }: { admin: boolean; lang: string }) {
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((f) => ({ ...f, [k]: v }));
 
   async function run() {
+    if (!r.canStart()) return; // guard against double-click / overlapping runs
     r.reset();
     setResult(null);
     r.setStatus('Opus 4.8 is building your plan…');
@@ -362,7 +380,7 @@ function PlanCoverage({ admin, lang }: { admin: boolean; lang: string }) {
       r.setError(e instanceof Error ? e.message : 'Something went wrong.');
       r.setStatus('');
     } finally {
-      r.setRunning(false);
+      r.stop();
     }
   }
 
@@ -477,6 +495,7 @@ function PlanView({ result, admin }: { result: PlanApiResult; admin: boolean }) 
   const g = result.ground;
   return (
     <div className="plan">
+      {result.usedMock && <MockBanner />}
       {!admin && <VerifiedBanner passed={result.passed} checks={result.final.grade.criteria.length} />}
       <div className="summary" style={{ marginTop: 10 }}>{plan.summary}</div>
 
@@ -563,6 +582,7 @@ function FindCareNow({ admin, lang }: { admin: boolean; lang: string }) {
   const set = <K extends keyof HelpForm>(k: K, v: HelpForm[K]) => setForm((f) => ({ ...f, [k]: v }));
 
   async function run() {
+    if (!r.canStart()) return; // guard against double-click / overlapping runs
     r.reset();
     setResult(null);
     r.setStatus('Opus 4.8 is searching the web for care near you…');
@@ -582,7 +602,7 @@ function FindCareNow({ admin, lang }: { admin: boolean; lang: string }) {
       r.setError(e instanceof Error ? e.message : 'Something went wrong.');
       r.setStatus('');
     } finally {
-      r.setRunning(false);
+      r.stop();
     }
   }
 
@@ -659,11 +679,12 @@ function FindCareNow({ admin, lang }: { admin: boolean; lang: string }) {
         {r.error && <div className="error">{r.error}</div>}
         {r.done && result && (
           <div className="plan">
+            {result.usedMock && <MockBanner />}
             {!admin && <VerifiedBanner passed={result.passed} checks={result.final.grade.criteria.length} />}
             <div className="section-title">
-              {result.final.resources.length} options near you — call or apply, then check off
+              {result.final.resources.length} options near you{result.usedMock ? '' : ' — call or apply, then check off'}
             </div>
-            <ResourceActionList resources={result.final.resources} />
+            <ResourceActionList resources={result.final.resources} mock={result.usedMock} />
             <div className="disclaimer">
               Throughline finds places that may be able to help. It is not medical advice and does not diagnose or
               treat any condition. Call ahead to confirm hours, cost, and eligibility.
@@ -676,7 +697,7 @@ function FindCareNow({ admin, lang }: { admin: boolean; lang: string }) {
   );
 }
 
-function ResourceActionList({ resources }: { resources: HelpResource[] }) {
+function ResourceActionList({ resources, mock }: { resources: HelpResource[]; mock: boolean }) {
   const [done, setDone] = useState<Set<number>>(new Set());
   const toggle = (i: number) =>
     setDone((d) => {
@@ -693,16 +714,25 @@ function ResourceActionList({ resources }: { resources: HelpResource[] }) {
       </div>
       <div className="ap-foot">{done.size} of {resources.length} contacted</div>
       {resources.map((res, i) => (
-        <ResourceCard key={i} r={res} done={done.has(i)} onToggle={() => toggle(i)} />
+        <ResourceCard key={i} r={res} mock={mock} done={done.has(i)} onToggle={() => toggle(i)} />
       ))}
     </>
   );
 }
 
-function ResourceCard({ r, done, onToggle }: { r: HelpResource; done: boolean; onToggle: () => void }) {
+/** Only allow safe link schemes for model-supplied URLs (no javascript: etc.). */
+function safeHttpUrl(u?: string): string | undefined {
+  if (!u) return undefined;
+  return /^https?:\/\//i.test(u.trim()) ? u.trim() : undefined;
+}
+
+function ResourceCard({ r, mock, done, onToggle }: { r: HelpResource; mock: boolean; done: boolean; onToggle: () => void }) {
   const costClass = r.cost === 'free' ? 'cost-free' : r.cost === 'unknown' ? 'cost-unknown' : 'cost-low';
   const costLabel = r.cost === 'free' ? 'free' : r.cost === 'sliding_scale' ? 'sliding scale' : r.cost === 'low_cost' ? 'low cost' : 'cost varies';
   const applyLabel = r.kind === 'clinical_trial' ? 'See if you qualify ↗' : 'Open / apply ↗';
+  const tel = (r.phone ?? '').replace(/[^0-9+]/g, '').replace(/(?!^)\+/g, ''); // digits + single leading +
+  const telOk = !mock && /\d/.test(tel); // never expose the sample (555) numbers as live dial links
+  const url = mock ? undefined : safeHttpUrl(r.sourceUrl);
   return (
     <div className={`res ${done ? 'act-done' : ''}`}>
       <div className="rhead">
@@ -718,23 +748,35 @@ function ResourceCard({ r, done, onToggle }: { r: HelpResource; done: boolean; o
       <div className="rwhy">{r.whyItHelps}</div>
       <div className="rmeta">
         {r.address && <>📍 {r.address} </>}
+        {r.phone && <>· 📞 {r.phone} </>}
         {r.hours && <>· 🕑 {r.hours} </>}
       </div>
-      <div className="act-btns" style={{ marginTop: 10 }}>
-        {r.phone && (
-          <a className="copy-btn primary" href={`tel:${r.phone.replace(/[^0-9+]/g, '')}`} onClick={onToggle}>
-            📞 Call {r.phone}
-          </a>
-        )}
-        {r.sourceUrl && (
-          <a className="copy-btn" href={r.sourceUrl} target="_blank" rel="noreferrer" onClick={onToggle}>
-            {applyLabel}
-          </a>
-        )}
-        <button className="copy-btn" onClick={onToggle}>
-          {done ? 'Undo' : 'Mark done'}
-        </button>
-      </div>
+      {!mock && (
+        <div className="act-btns" style={{ marginTop: 10 }}>
+          {telOk && (
+            <a className="copy-btn primary" href={`tel:${tel}`} onClick={onToggle}>
+              📞 Call {r.phone}
+            </a>
+          )}
+          {url && (
+            <a className="copy-btn" href={url} target="_blank" rel="noreferrer" onClick={onToggle}>
+              {applyLabel}
+            </a>
+          )}
+          <button className="copy-btn" onClick={onToggle}>
+            {done ? 'Undo' : 'Mark done'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MockBanner() {
+  return (
+    <div className="mock-banner">
+      <b>Demo mode — sample data.</b> These results are illustrative, not live, and the contact details are
+      placeholders. Add an <code>ANTHROPIC_API_KEY</code> to get real, web-verified results you can act on.
     </div>
   );
 }

@@ -88,7 +88,9 @@ export function scoreGrade(modelCriteria: CriterionResult[], rubric: Rubric): Gr
       score,
       passed,
       reasoning: m?.reasoning ?? 'No judgment returned for this criterion.',
-      fix: m?.fix,
+      // If the grader omitted this criterion, give repair guidance from the
+      // rubric description rather than leaving it with no fix.
+      fix: m?.fix ?? (m === undefined ? rc.description : undefined),
     };
   });
 

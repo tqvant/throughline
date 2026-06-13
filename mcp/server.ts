@@ -28,12 +28,18 @@ server.registerTool(
     description:
       'Given a household situation, compute which health-coverage programs they likely qualify for (Medi-Cal/Medicaid, subsidized marketplace, safety-net options) using public Federal Poverty Level data. Deterministic — no model call. Surfaces the current-monthly-income Medicaid pathway and enrollment-deadline flags.',
     inputSchema: {
-      state: z.string().default('CA').describe('Two-letter state code'),
-      householdSize: z.number().int().min(1).describe('People in the household'),
-      annualIncome: z.number().min(0).describe("Last year's / projected annual household income, USD"),
+      state: z
+        .string()
+        .regex(/^[A-Za-z]{2}$/)
+        .default('CA')
+        .describe('Two-letter state code. NOTE: program rules are modeled on California (Medi-Cal / Covered California).'),
+      householdSize: z.number().int().min(1).max(50).describe('People in the household'),
+      annualIncome: z.number().finite().min(0).max(1e9).describe("Last year's / projected annual household income, USD"),
       currentMonthlyIncome: z
         .number()
+        .finite()
         .min(0)
+        .max(1e9)
         .describe('Current total monthly household income right now, USD (include unemployment)'),
       reason: z
         .enum(['job_loss', 'reduced_hours', 'aging_out', 'other'])
@@ -66,8 +72,8 @@ server.registerTool(
     description:
       'Find real, local, free or low-cost immediate-care resources for someone with no coverage right now — free clinics, community health centers, mobile units, prescription assistance, and clinical trials. Self-verifies the list (local, real, sourced, free) before returning. Uses the live web when ANTHROPIC_API_KEY is set, otherwise a deterministic offline sample.',
     inputSchema: {
-      location: z.string().describe('City, ZIP, or "City, ST"'),
-      need: z.string().describe('What they need right now, in plain words'),
+      location: z.string().trim().min(1).describe('City, ZIP, or "City, ST"'),
+      need: z.string().trim().min(1).describe('What they need right now, in plain words'),
       notes: z.string().optional(),
     },
   },

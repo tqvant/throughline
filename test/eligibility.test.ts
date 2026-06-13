@@ -106,3 +106,25 @@ describe('flag edge cases', () => {
     expect(statusOf(res, 'medi_cal_pregnancy')).toBe('eligible');
   });
 });
+
+describe('uses current income, not last year (audit regression)', () => {
+  it('low annual + high current → NOT Medi-Cal eligible, routed to marketplace', () => {
+    const res = computeEligibility(
+      sit({ householdSize: 1, annualIncome: 10000, currentMonthlyIncome: 8000, reason: 'other' }),
+      { today: TODAY },
+    );
+    expect(statusOf(res, 'medi_cal_adults')).toBe('not_eligible');
+    expect(res.recommended).not.toContain('medi_cal_adults');
+    expect(statusOf(res, 'covered_ca')).toBe('eligible');
+  });
+
+  it('does not over-grant at the 138% boundary due to rounding', () => {
+    const fpl = 15650; // household of 1
+    const justOverMonthly = Math.round((fpl * 1.384) / 12); // ~138.4% annualized → rounds to 138 but is over
+    const res = computeEligibility(
+      sit({ householdSize: 1, annualIncome: 0, currentMonthlyIncome: justOverMonthly, reason: 'other' }),
+      { today: TODAY },
+    );
+    expect(statusOf(res, 'medi_cal_adults')).toBe('not_eligible');
+  });
+});
