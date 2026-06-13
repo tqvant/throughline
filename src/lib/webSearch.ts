@@ -154,7 +154,7 @@ async function extractResources(notes: string, input: FindHelpInput): Promise<He
     model: MODEL,
     max_tokens: 3000,
     system:
-      'Turn the research notes into a structured list of resources. Only include resources actually supported by the notes; do not invent any. For EVERY resource you MUST include a sourceUrl (the web page / listing it came from — the user needs a working link) and a cost level (free, sliding_scale, low_cost, or unknown). Include a phone number and address whenever the notes provide them. Drop any resource you cannot attach a sourceUrl to.' +
+      'Turn the research notes into a structured list of 4-7 real local resources. Only include resources actually supported by the notes; do not invent any. For EACH resource include a cost level (free, sliding_scale, low_cost, or unknown) and, whenever the notes provide it, a sourceUrl (the web page/listing — the user needs a working link), a phone number, and an address. Strongly prefer resources that have a usable link or phone, but include a clearly-real clinic even if only its name and location are known. Be generous in returning options.' +
       langLine,
     messages: [
       {
