@@ -20,6 +20,19 @@ qualify for free coverage."** Medicaid/Medi-Cal eligibility is based on your
 little income this month usually qualifies for $0 coverage *immediately* — and
 almost no one tells them.
 
+## The deadlier gap
+
+There's a worse version of this: your job-based coverage ends at the end of the
+month, the new plan hasn't started, and Medi-Cal can take weeks to process. If
+an emergency hits *in that gap*, you're uninsured with nowhere obvious to turn.
+Throughline's second mode, **Find care now**, points an Opus 4.8 agent at the
+**live web** (server-side `web_search`) to find local, free or low-cost,
+immediate-care resources — free clinics, mobile health units, sliding-scale
+urgent care, prescription assistance, **clinical trials that provide free
+study-related care to participants**, even crowd-sourced community leads — and
+**verifies every result is local, real, sourced, and free** (against a second
+rubric) before it shows you anything.
+
 ## Who it's for
 
 Anyone in a coverage gap — laid off, hours cut, aging off a parent's plan —

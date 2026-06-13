@@ -17,6 +17,7 @@ import type {
   RepairInput,
 } from './types';
 import { loadRubric } from './rubric';
+import { recordCall } from './telemetry';
 
 const MODEL = process.env.BRIDGE_MODEL || 'claude-opus-4-8';
 
@@ -135,6 +136,7 @@ async function callTool<T>(args: {
     ],
     tool_choice: { type: 'tool', name: args.toolName },
   });
+  recordCall(MODEL, res.usage);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const block = res.content.find((b: any) => b.type === 'tool_use') as any;
   if (!block) throw new Error(`Model did not call ${args.toolName}`);

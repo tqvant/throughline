@@ -145,6 +145,15 @@ export interface Iteration {
   grade: Grade;
 }
 
+/** Best-effort count of the real API work a run did (0 in offline/mock mode). */
+export interface Telemetry {
+  model: string;
+  apiCalls: number;
+  webSearches: number;
+  inputTokens: number;
+  outputTokens: number;
+}
+
 export interface NavigatorResult {
   situation: Situation;
   ground: EligibilityResult;
@@ -152,4 +161,80 @@ export interface NavigatorResult {
   final: Iteration;
   passed: boolean;
   provider: string;
+  telemetry?: Telemetry;
+}
+
+// ---- "Find care near me — now": the emergency-gap web-search agent ----
+//
+// For the days/weeks between when coverage ends and the next plan (or Medi-Cal)
+// starts. An Opus 4.8 / Fable 5 agent searches the live web for local, free or
+// low-cost, immediate-care resources, then self-verifies the list against a
+// rubric before showing it.
+
+export type ResourceKind =
+  | 'free_clinic'
+  | 'community_health_center'
+  | 'mobile_unit'
+  | 'prescription'
+  | 'urgent_low_cost'
+  | 'dental'
+  | 'clinical_trial'
+  | 'community_tip'
+  | 'hotline'
+  | 'other';
+
+export type CostLevel = 'free' | 'sliding_scale' | 'low_cost' | 'unknown';
+
+export interface HelpResource {
+  name: string;
+  kind: ResourceKind;
+  description: string;
+  whyItHelps: string;
+  cost: CostLevel;
+  address?: string;
+  phone?: string;
+  hours?: string;
+  /** Where this came from — a web page or a community thread. */
+  sourceUrl?: string;
+  /** "web" = official/listed source; "community" = forum/social (verify before relying). */
+  sourceType: 'web' | 'community';
+}
+
+export interface FindHelpInput {
+  /** City, ZIP, or "City, ST". */
+  location: string;
+  /** What they need right now, in their words. */
+  need: string;
+  /** Optional extra context (e.g. "uninsured until Aug 1", "need insulin"). */
+  notes?: string;
+}
+
+export interface HelpFinder {
+  name: string;
+  search(input: FindHelpInput): Promise<{ resources: HelpResource[]; notes?: string }>;
+  grade(input: {
+    input: FindHelpInput;
+    resources: HelpResource[];
+  }): Promise<CriterionResult[]>;
+  repair(input: {
+    input: FindHelpInput;
+    previous: HelpResource[];
+    failures: CriterionResult[];
+  }): Promise<{ resources: HelpResource[] }>;
+}
+
+export interface HelpIteration {
+  index: number;
+  label: string;
+  resources: HelpResource[];
+  grade: Grade;
+}
+
+export interface FindHelpResult {
+  input: FindHelpInput;
+  iterations: HelpIteration[];
+  final: HelpIteration;
+  passed: boolean;
+  provider: string;
+  telemetry?: Telemetry;
 }

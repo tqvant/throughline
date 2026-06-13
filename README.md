@@ -2,12 +2,25 @@
 
 **Find the health coverage you qualify for between jobs — in minutes, not weeks.**
 
-Throughline is a self-verifying benefits navigator. Opus 4.8 drafts a personalized
-coverage plan, then **grades its own work** against a deterministic eligibility
-engine and a committed `rubric.yaml`, and **repairs itself** until it passes.
+Throughline is a self-verifying safety-net navigator. Opus 4.8 does the work,
+then **grades its own output** against a rubric and **repairs itself** until it
+passes. Two modes, same spine:
+
+- **Plan my coverage** — what you qualify for (Medi-Cal, subsidized marketplace,
+  the income-drop pathway). Verified against a deterministic eligibility engine
+  built on public Federal Poverty Level data + `rubric.yaml`.
+- **Find care now** — the deadly gap *before* coverage kicks in: an agent
+  searches the **live web** (server-side `web_search`) for local, free/low-cost,
+  immediate-care resources — free clinics, mobile units, prescription help, and
+  **clinical trials that provide free study-related care** — and verifies every
+  result is local, real, sourced, and free before showing it.
 
 Built at Claude Build Day. See [`BRIEF.md`](./BRIEF.md) for the problem, the
-rubric, and the definition of done.
+rubrics, and the definition of done.
+
+**Model:** defaults to `claude-opus-4-8`; set `BRIDGE_MODEL=claude-fable-5` to
+run on Fable 5 (both support the `web_search_20260209` server tool). The rest of
+the API surface is identical.
 
 ![the self-verifying loop: a draft scores 70/100 and fails three checks, then a self-repair pass scores 100/100 and passes](#)
 
@@ -88,6 +101,18 @@ npm run eval:mock # same end-to-end loop, offline & deterministic
 | [`src/lib/mockProvider.ts`](./src/lib/mockProvider.ts) | Deterministic offline provider (tests + venue insurance) |
 | [`src/lib/loop.ts`](./src/lib/loop.ts) | The provider-agnostic self-verifying loop |
 | [`scripts/eval.ts`](./scripts/eval.ts) | The rerunnable verification harness |
+
+## Use it from another agent (MCP)
+
+The same engine is exposed as Model Context Protocol tools — `check_eligibility`
+(deterministic, no key) and `find_care_resources` — so Claude Desktop, Claude
+Code, or any agent can call Throughline directly. See
+[`mcp/server.ts`](./mcp/server.ts) and [WORKFLOW.md](./WORKFLOW.md).
+
+```bash
+npm run mcp                                   # run the server (stdio)
+claude mcp add throughline -- npx tsx mcp/server.ts   # add to Claude Code
+```
 
 ## Deploy to a live URL (Vercel)
 

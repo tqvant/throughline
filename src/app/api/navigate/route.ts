@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { runNavigator } from '@/lib/loop';
 import { mockProvider } from '@/lib/mockProvider';
+import { getTelemetry, resetTelemetry } from '@/lib/telemetry';
 import type { NavigatorProvider, Reason, Situation } from '@/lib/types';
 
 export const runtime = 'nodejs';
@@ -42,8 +43,9 @@ export async function POST(req: Request) {
       provider = anthropicProvider;
     }
 
+    resetTelemetry();
     const result = await runNavigator(situation, provider);
-    return NextResponse.json({ ...result, usedMock: useMock });
+    return NextResponse.json({ ...result, telemetry: getTelemetry(), usedMock: useMock });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json({ error: message }, { status: 500 });
