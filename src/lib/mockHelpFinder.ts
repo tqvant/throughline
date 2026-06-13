@@ -43,12 +43,12 @@ function repairedResources(loc: string): HelpResource[] {
   return [
     ...base,
     {
-      name: 'Free & charitable clinics finder (NAFC)',
+      name: 'Free & low-cost clinics finder',
       kind: 'free_clinic',
-      description: 'Find free and charitable clinics in your area through the National Association of Free & Charitable Clinics.',
+      description: 'Search a national directory of free and low-cost clinics near you.',
       whyItHelps: 'Free or very low-cost care for the uninsured while you wait for coverage.',
       cost: 'free',
-      sourceUrl: 'https://www.nafcclinics.org/find-clinic',
+      sourceUrl: 'https://www.freeclinics.com',
       sourceType: 'web',
     },
     {
