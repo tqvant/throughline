@@ -144,7 +144,9 @@ async function callTool<T>(args: {
 }): Promise<T> {
   const res = await getClient().messages.create({
     model: MODEL,
-    max_tokens: args.maxTokens ?? 4096,
+    // Keep outputs bounded so a generate+grade pass fits within the serverless
+    // function time limit (large generations are the main latency source).
+    max_tokens: args.maxTokens ?? 2400,
     system: args.system,
     messages: [{ role: 'user', content: args.user }],
     tools: [
@@ -222,7 +224,7 @@ export const anthropicProvider: NavigatorProvider = {
       user,
       toolName: 'submit_grade',
       schema: GRADE_SCHEMA,
-      maxTokens: 3000,
+      maxTokens: 1500,
     });
     return out.criteria;
   },

@@ -52,7 +52,9 @@ export async function POST(req: Request) {
     }
 
     resetTelemetry();
-    const result = await runNavigator(situation, provider);
+    // Cap iterations so a rare repair can't stack enough sequential Opus calls
+    // to exceed the serverless function time limit.
+    const result = await runNavigator(situation, provider, { maxIterations: 2 });
     return NextResponse.json({ ...result, telemetry: getTelemetry(), usedMock: useMock });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
