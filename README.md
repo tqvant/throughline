@@ -78,15 +78,17 @@ cp .env.example .env.local        # then paste your ANTHROPIC_API_KEY
 npm run dev                       # http://localhost:3000
 ```
 
-No key handy? Everything still runs in **deterministic offline mode** — the full
-generate → grade → repair loop, no API calls:
+**The live deployment runs real Opus 4.8 + live web search** (the API key is
+configured). Plan mode generates and self-grades a real plan; "Find care now"
+searches the live web for real local clinics with working call/apply links.
+
+No key? The app falls back to a **deterministic offline mode** that runs the full
+generate → grade → repair loop with no API calls — handy for tests, development,
+and a Wi-Fi-proof backup:
 
 ```bash
 npm run eval:mock                 # the whole loop, offline
 ```
-
-The web app auto-falls back to offline mode when no key is present, so the live
-demo survives flaky Wi-Fi.
 
 ## Verify it (this is the "done" definition)
 
