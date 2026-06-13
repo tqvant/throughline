@@ -15,7 +15,7 @@ passes. Two modes, same spine:
   searches the **live web** (server-side `web_search`) for local, free/low-cost,
   immediate-care resources — free clinics, mobile units, prescription help, and
   **clinical trials that provide free study-related care** — and verifies every
-  result is local, real, sourced, and free before showing it.
+  result is local, low- or no-cost, and sourced before showing it.
 
 Built at Claude Build Day. See [`BRIEF.md`](./BRIEF.md) for the problem, the
 rubrics, and the definition of done.
@@ -93,7 +93,7 @@ npm run eval:mock                 # the whole loop, offline
 ## Verify it (this is the "done" definition)
 
 ```bash
-npm test          # deterministic eligibility engine — 12 assertions
+npm test          # engine + both self-verifying loops — 16 tests, 42 assertions
 npm run eval      # every persona → a rubric-passing plan via real Opus 4.8
 npm run eval:mock # same end-to-end loop, offline & deterministic
 ```
