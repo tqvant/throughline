@@ -1,0 +1,30 @@
+{
+  "name": "throughline",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Throughline — a self-verifying benefits navigator that finds health coverage you qualify for between jobs, in minutes not weeks.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "eval": "tsx scripts/eval.ts",
+    "eval:mock": "tsx scripts/eval.ts --mock"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.104.1",
+    "next": "14.2.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "20.14.10",
+    "@types/react": "18.3.3",
+    "@types/react-dom": "18.3.0",
+    "tsx": "^4.22.4",
+    "typescript": "5.5.4",
+    "vitest": "^4.1.8"
+  }
+}

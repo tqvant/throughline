@@ -1,0 +1,89 @@
+# Throughline — Benefits Plan Rubric
+# ---------------------------------------------------------------------------
+# This is the CANONICAL grading rubric. Opus 4.8 grades every generated plan
+# against these criteria, comparing the plan to the deterministic ground-truth
+# eligibility computed by src/lib/eligibility.ts.
+#
+# A plan PASSES only if:
+#   1. its weighted score >= pass_threshold, AND
+#   2. zero `critical: true` criteria are marked failed.
+#
+# Another team can drop in a new rubric here and rerun `npm run eval` to
+# re-verify the whole system against the new bar — no code change required.
+name: Throughline Benefits Plan Rubric
+version: 1
+pass_threshold: 90
+
+criteria:
+  - id: completeness
+    name: Covers every program the eligibility engine recommends
+    weight: 25
+    critical: true
+    description: >
+      The plan must include an action item for EVERY program in
+      ground_truth.recommended (those with status "eligible" or
+      "likely_eligible"), and must not omit the always-available safety-net
+      options (community health center / FQHC sliding-scale care, and
+      prescription assistance). Missing a recommended program is a critical
+      failure.
+
+  - id: eligibility_accuracy
+    name: Eligibility facts match the engine
+    weight: 20
+    critical: true
+    description: >
+      Any Federal-Poverty-Level percentage, income threshold, or eligibility
+      determination stated in the plan must match ground_truth within rounding.
+      The plan must NOT tell the person to apply for a program that ground_truth
+      marks "not_eligible" as though they qualify, and must not invent programs
+      or thresholds that do not appear in ground_truth.
+
+  - id: income_drop_pathway
+    name: Surfaces the current-monthly-income Medicaid pathway when flagged
+    weight: 15
+    critical: true
+    description: >
+      If ground_truth.flags includes "medicaid_income_drop_pathway", the plan
+      MUST clearly explain that Medicaid / Medi-Cal eligibility is based on
+      CURRENT monthly income (after the job loss) — not last year's salary — so
+      the person very likely qualifies for free coverage right now even though
+      their prior annual income was high. This is the single most impactful and
+      most-missed fact for newly laid-off applicants.
+
+  - id: deadline_urgency
+    name: Flags the time-sensitive enrollment windows
+    weight: 10
+    critical: false
+    description: >
+      If ground_truth.flags includes "sep_60_day", the plan must call out the
+      60-day Special Enrollment Period that losing job-based coverage opens on
+      the marketplace, and the 60-day COBRA election window, so the person does
+      not miss them.
+
+  - id: actionability
+    name: Concrete, do-this-now next steps
+    weight: 15
+    critical: false
+    description: >
+      Each recommended program must say WHERE to apply (e.g., BenefitsCal,
+      CoveredCA.com, the county human-services office, or a named local health
+      center) and WHICH documents to bring (e.g., ID, proof of income or proof
+      of income loss / layoff letter, prior insurance end date).
+
+  - id: safety_navigation_only
+    name: Benefits navigation only — no medical advice
+    weight: 10
+    critical: true
+    description: >
+      The plan helps with benefits eligibility and enrollment ONLY. It must not
+      diagnose conditions, recommend treatments or medications, or give any
+      clinical/medical advice. A short disclaimer making this clear must be
+      present.
+
+  - id: plain_empathetic
+    name: Plain language and an empathetic tone
+    weight: 5
+    critical: false
+    description: >
+      Written in plain language with no unexplained jargon, acknowledges that a
+      coverage gap is stressful, and is encouraging and respectful.
