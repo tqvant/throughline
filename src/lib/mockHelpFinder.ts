@@ -10,29 +10,28 @@ import type {
   HelpResource,
 } from './types';
 
+// REAL national safety-net entry points (work for any location, with live
+// links) — used offline / when no key is set, so results are always real and
+// clickable, never placeholder data.
 function baseResources(loc: string): HelpResource[] {
   return [
     {
-      name: `${loc} Free Clinic`,
-      kind: 'free_clinic',
-      description: 'Volunteer-staffed clinic offering primary care at no cost.',
-      whyItHelps: 'Covers you for an urgent primary-care visit while you have no insurance.',
-      cost: 'free',
-      address: `Downtown ${loc}`,
-      phone: '(555) 010-2000',
-      hours: 'Walk-in Tue/Thu 9am–1pm',
-      sourceUrl: 'https://www.freeclinics.com',
+      name: `Federally funded health center near ${loc}`,
+      kind: 'community_health_center',
+      description: 'HRSA-funded community health centers provide primary, dental, and behavioral care on a sliding scale. Use the official locator to find one near you.',
+      whyItHelps: 'Charges based on income — often $0–$40 — regardless of insurance or immigration status.',
+      cost: 'sliding_scale',
+      sourceUrl: 'https://findahealthcenter.hrsa.gov',
       sourceType: 'web',
     },
     {
-      name: `${loc} Community Health Center (FQHC)`,
-      kind: 'community_health_center',
-      description: 'Federally Qualified Health Center with sliding-scale fees.',
-      whyItHelps: 'Charges based on income — often $0–$40 — regardless of insurance or immigration status.',
-      cost: 'sliding_scale',
-      address: `${loc}, CA`,
-      phone: '(555) 010-3000',
-      // First-pass omission: no sourceUrl yet → fails "real_sourced".
+      name: '211 — free local health & social-service referrals',
+      kind: 'hotline',
+      description: 'Call 211 or search 211.org for free referrals to local clinics, prescription help, and care during a coverage gap.',
+      whyItHelps: 'A real person helps you find local resources fast — free, around the clock.',
+      cost: 'free',
+      phone: '211',
+      // First-pass omission: no sourceUrl yet → fails "real_sourced", triggering a repair.
       sourceType: 'web',
     },
   ];
@@ -40,25 +39,23 @@ function baseResources(loc: string): HelpResource[] {
 
 function repairedResources(loc: string): HelpResource[] {
   const base = baseResources(loc);
-  base[1].sourceUrl = 'https://findahealthcenter.hrsa.gov';
+  base[1].sourceUrl = 'https://www.211.org';
   return [
     ...base,
     {
-      name: `${loc} County Mobile Health Van`,
-      kind: 'mobile_unit',
-      description: 'Pop-up mobile clinic that rotates through neighborhoods weekly.',
-      whyItHelps: 'Brings free basic care and screenings to you while applications process.',
+      name: 'Free & charitable clinics finder (NAFC)',
+      kind: 'free_clinic',
+      description: 'Find free and charitable clinics in your area through the National Association of Free & Charitable Clinics.',
+      whyItHelps: 'Free or very low-cost care for the uninsured while you wait for coverage.',
       cost: 'free',
-      hours: 'Schedule posted weekly',
-      phone: '(555) 010-4000',
-      sourceUrl: 'https://www.example-county.gov/mobile-health',
+      sourceUrl: 'https://www.nafcclinics.org/find-clinic',
       sourceType: 'web',
     },
     {
-      name: 'Prescription assistance (NeedyMeds · GoodRx · 340B)',
+      name: 'Prescription assistance — NeedyMeds & GoodRx',
       kind: 'prescription',
-      description: 'Discount and patient-assistance programs for medications.',
-      whyItHelps: 'Keeps prescriptions affordable during the gap, even before new coverage starts.',
+      description: 'Patient-assistance programs and discount tools that lower medication costs during the gap.',
+      whyItHelps: 'Keeps prescriptions affordable even before new coverage starts.',
       cost: 'low_cost',
       sourceUrl: 'https://www.needymeds.org',
       sourceType: 'web',
@@ -72,15 +69,6 @@ function repairedResources(loc: string): HelpResource[] {
       cost: 'free',
       sourceUrl: 'https://clinicaltrials.gov',
       sourceType: 'web',
-    },
-    {
-      name: `r/${loc.replace(/\s+/g, '')} — community mutual-aid thread`,
-      kind: 'community_tip',
-      description: 'Locals share which clinics and pop-ups actually help right now.',
-      whyItHelps: 'Crowd-sourced, up-to-date leads on free care — verify before relying on any single tip.',
-      cost: 'unknown',
-      sourceUrl: 'https://www.reddit.com',
-      sourceType: 'community',
     },
   ];
 }

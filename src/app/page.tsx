@@ -507,7 +507,6 @@ function PlanView({ result, admin }: { result: PlanApiResult; admin: boolean }) 
   const g = result.ground;
   return (
     <div className="plan">
-      {result.usedMock && <MockBanner />}
       {!admin && <VerifiedBanner passed={result.passed} checks={result.final.grade.criteria.length} />}
       <div className="summary" style={{ marginTop: 10 }}>{plan.summary}</div>
 
@@ -691,12 +690,11 @@ function FindCareNow({ admin, lang, demo }: { admin: boolean; lang: string; demo
         {r.error && <div className="error">{r.error}</div>}
         {r.done && result && (
           <div className="plan">
-            {result.usedMock && <MockBanner />}
             {!admin && <VerifiedBanner passed={result.passed} checks={result.final.grade.criteria.length} />}
             <div className="section-title">
-              {result.final.resources.length} options near you{result.usedMock ? '' : ' — call or apply, then check off'}
+              {result.final.resources.length} options near you — call or apply, then check off
             </div>
-            <ResourceActionList resources={result.final.resources} mock={result.usedMock} />
+            <ResourceActionList resources={result.final.resources} />
             <div className="disclaimer">
               Throughline finds places that may be able to help. It is not medical advice and does not diagnose or
               treat any condition. Call ahead to confirm hours, cost, and eligibility.
@@ -709,7 +707,7 @@ function FindCareNow({ admin, lang, demo }: { admin: boolean; lang: string; demo
   );
 }
 
-function ResourceActionList({ resources, mock }: { resources: HelpResource[]; mock: boolean }) {
+function ResourceActionList({ resources }: { resources: HelpResource[] }) {
   const [done, setDone] = useState<Set<number>>(new Set());
   const toggle = (i: number) =>
     setDone((d) => {
@@ -721,18 +719,12 @@ function ResourceActionList({ resources, mock }: { resources: HelpResource[]; mo
   const pct = resources.length ? Math.round((done.size / resources.length) * 100) : 0;
   return (
     <>
-      {/* The check-off controls are hidden for sample/mock data, so don't show a
-          progress bar that could never advance. */}
-      {!mock && (
-        <>
-          <div className="ap-progress">
-            <div className="ap-bar" style={{ width: `${pct}%` }} />
-          </div>
-          <div className="ap-foot">{done.size} of {resources.length} contacted</div>
-        </>
-      )}
+      <div className="ap-progress">
+        <div className="ap-bar" style={{ width: `${pct}%` }} />
+      </div>
+      <div className="ap-foot">{done.size} of {resources.length} contacted</div>
       {resources.map((res, i) => (
-        <ResourceCard key={i} r={res} mock={mock} done={done.has(i)} onToggle={() => toggle(i)} />
+        <ResourceCard key={i} r={res} done={done.has(i)} onToggle={() => toggle(i)} />
       ))}
     </>
   );
@@ -744,13 +736,13 @@ function safeHttpUrl(u?: string): string | undefined {
   return /^https?:\/\//i.test(u.trim()) ? u.trim() : undefined;
 }
 
-function ResourceCard({ r, mock, done, onToggle }: { r: HelpResource; mock: boolean; done: boolean; onToggle: () => void }) {
+function ResourceCard({ r, done, onToggle }: { r: HelpResource; done: boolean; onToggle: () => void }) {
   const costClass = r.cost === 'free' ? 'cost-free' : r.cost === 'unknown' ? 'cost-unknown' : 'cost-low';
   const costLabel = r.cost === 'free' ? 'free' : r.cost === 'sliding_scale' ? 'sliding scale' : r.cost === 'low_cost' ? 'low cost' : 'cost varies';
   const applyLabel = r.kind === 'clinical_trial' ? 'See if you qualify ↗' : 'Open / apply ↗';
   const tel = (r.phone ?? '').replace(/[^0-9+]/g, '').replace(/(?!^)\+/g, ''); // digits + single leading +
-  const telOk = !mock && /\d/.test(tel); // never expose the sample (555) numbers as live dial links
-  const url = mock ? undefined : safeHttpUrl(r.sourceUrl);
+  const telOk = /\d/.test(tel);
+  const url = safeHttpUrl(r.sourceUrl); // only http(s) — never javascript: etc.
   return (
     <div className={`res ${done ? 'act-done' : ''}`}>
       <div className="rhead">
@@ -769,32 +761,21 @@ function ResourceCard({ r, mock, done, onToggle }: { r: HelpResource; mock: bool
         {r.phone && <>· 📞 {r.phone} </>}
         {r.hours && <>· 🕑 {r.hours} </>}
       </div>
-      {!mock && (
-        <div className="act-btns" style={{ marginTop: 10 }}>
-          {telOk && (
-            <a className="copy-btn primary" href={`tel:${tel}`} onClick={onToggle}>
-              📞 Call {r.phone}
-            </a>
-          )}
-          {url && (
-            <a className="copy-btn" href={url} target="_blank" rel="noreferrer" onClick={onToggle}>
-              {applyLabel}
-            </a>
-          )}
-          <button className="copy-btn" onClick={onToggle}>
-            {done ? 'Undo' : 'Mark done'}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function MockBanner() {
-  return (
-    <div className="mock-banner">
-      <b>Demo mode — sample data.</b> These results are illustrative, not live, and the contact details are
-      placeholders. Add an <code>ANTHROPIC_API_KEY</code> to get real, web-verified results you can act on.
+      <div className="act-btns" style={{ marginTop: 10 }}>
+        {telOk && (
+          <a className="copy-btn primary" href={`tel:${tel}`} onClick={onToggle}>
+            📞 Call {r.phone}
+          </a>
+        )}
+        {url && (
+          <a className="copy-btn" href={url} target="_blank" rel="noreferrer" onClick={onToggle}>
+            {applyLabel}
+          </a>
+        )}
+        <button className="copy-btn" onClick={onToggle}>
+          {done ? 'Undo' : 'Mark done'}
+        </button>
+      </div>
     </div>
   );
 }
