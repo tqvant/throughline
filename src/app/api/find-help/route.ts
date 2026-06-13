@@ -22,7 +22,7 @@ function normalize(raw: unknown): FindHelpInput {
 }
 
 export async function POST(req: Request) {
-  let body: { input?: unknown; mock?: boolean };
+  let body: { input?: unknown; mock?: boolean; live?: boolean };
   try {
     body = await req.json();
   } catch {
@@ -32,7 +32,12 @@ export async function POST(req: Request) {
   try {
     const input = normalize(body.input);
 
-    const useMock = body.mock === true || !process.env.ANTHROPIC_API_KEY;
+    // The real web_search agent loop exceeds the 60s serverless function limit on
+    // this Vercel plan, so the DEPLOYED find-care uses the instant deterministic
+    // finder by default (honestly labeled as demo data in the UI). The real
+    // web-search finder works without a time cap locally, via `npm run eval`, and
+    // via the MCP server — opt into it here with {"live": true}.
+    const useMock = body.mock === true || body.live !== true || !process.env.ANTHROPIC_API_KEY;
     let finder: HelpFinder;
     if (useMock) {
       finder = mockHelpFinder;
@@ -42,9 +47,8 @@ export async function POST(req: Request) {
     }
 
     resetTelemetry();
-    // The live web_search loop is slow; with a real key (web finder) do a single
-    // search + self-grade to stay within the ~60s serverless limit. The mock
-    // finder is instant, so it keeps the full search→grade→repair demo.
+    // Mock runs the full search→grade→repair loop instantly; the real finder
+    // (opt-in) does a single lean search + self-grade to bound latency.
     const maxIterations = useMock ? 3 : 1;
     const result = await runFindHelp(input, finder, { maxIterations });
     return NextResponse.json({ ...result, telemetry: getTelemetry(), usedMock: useMock });

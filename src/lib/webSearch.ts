@@ -30,7 +30,7 @@ function getClient(): Anthropic {
 // serverless function limit (~60s): web_search only, capped uses.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const WEB_TOOLS: any[] = [
-  { type: 'web_search_20260209', name: 'web_search', max_uses: 1 },
+  { type: 'web_search_20260209', name: 'web_search', max_uses: 3 },
 ];
 
 const RESOURCES_SCHEMA = {
@@ -129,7 +129,7 @@ async function gatherFromWeb(prompt: string): Promise<string> {
   recordCall(MODEL, response.usage, countWebSearches(response.content));
   // Server-side tools pause the turn when they hit their per-turn cap; resume.
   let guard = 0;
-  while (response.stop_reason === 'pause_turn' && guard < 1) {
+  while (response.stop_reason === 'pause_turn' && guard < 3) {
     messages.push({ role: 'assistant', content: response.content });
     response = await c.messages.create({
       model: MODEL,
