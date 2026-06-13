@@ -76,9 +76,6 @@ export default function Page() {
 
       <div className="footer">
         <span>Built at Claude Build Day · benefits navigation, not medical advice.</span>
-        <button className="admin-toggle" onClick={() => setAdmin((a) => !a)}>
-          {admin ? 'hide dev view' : 'dev view'}
-        </button>
       </div>
     </div>
   );
