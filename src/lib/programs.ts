@@ -43,7 +43,7 @@ export const PROGRAMS: Program[] = [
       if (ctx.currentMonthlyFplPercent <= MEDICAID_ADULT) {
         return {
           status: 'eligible',
-          reason: `Your CURRENT monthly income is about ${ctx.currentMonthlyFplPercent}% of the Federal Poverty Level, at or under the 138% cutoff. Medi-Cal looks at income right now — not last year's salary — so you very likely qualify for $0 coverage today.`,
+          reason: `Your CURRENT monthly income is about ${ctx.currentMonthlyFplPercent}% of the Federal Poverty Level, at or under the 138% cutoff. Medi-Cal looks at income right now — not last year's salary — so you very likely qualify for $0 coverage. Apply now: approval can take a few weeks, but coverage can be backdated up to ~3 months (2026) if you were eligible then, and community clinics can see you in the meantime.`,
         };
       }
       if (ctx.annualFplPercent <= MEDICAID_ADULT) {

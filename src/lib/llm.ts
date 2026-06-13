@@ -39,7 +39,7 @@ function getClient(): Anthropic {
 
 const PROGRAM_REFERENCE = `
 PROGRAM RULES (California-focused; all thresholds are % of the Federal Poverty Level, FPL):
-- Medi-Cal (Medicaid) for ADULTS: income at or under 138% FPL. CRITICAL: Medi-Cal uses CURRENT MONTHLY income, not last year's salary. Someone newly laid off with little or no income now usually qualifies immediately, even if last year's annual income was high.
+- Medi-Cal (Medicaid) for ADULTS: income at or under 138% FPL. CRITICAL: Medi-Cal uses CURRENT MONTHLY income, not last year's salary. Someone newly laid off with little or no income now usually qualifies even if last year's annual income was high. TIMING (do not overstate): eligibility is likely, but approval is NOT instant — counties take up to ~45 days, and even after approval, finding a provider who accepts Medi-Cal and scheduling can take more weeks. Coverage can be backdated (retroactive up to ~3 months in 2026 if eligible then). So tell people to apply now but NOT to wait on the card to get care — point them to community clinics / "find care now" to bridge the wait. Never say coverage is "immediate" or "instant."
 - Medi-Cal for CHILDREN: up to 266% FPL (kids can be covered even when parents are not).
 - Medi-Cal pregnancy coverage: up to 213% FPL.
 - Covered California (ACA marketplace) premium subsidies: roughly 138%-400% FPL based on PROJECTED ANNUAL income; above 400% you can still enroll and may get enhanced subsidies. Losing job-based coverage opens a 60-day Special Enrollment Period.

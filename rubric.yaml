@@ -60,9 +60,23 @@ criteria:
       the marketplace, and the 60-day COBRA election window, so the person does
       not miss them.
 
+  - id: realistic_timeline
+    name: Sets realistic expectations about timing
+    weight: 5
+    critical: false
+    description: >
+      The plan must NOT claim coverage is "immediate" or "instant." Medi-Cal
+      approval can take a few weeks (counties have up to ~45 days), and even after
+      approval, finding a provider who accepts Medi-Cal and scheduling an
+      appointment can take more weeks. The plan should note this, note that
+      coverage can be backdated (retroactive, up to ~3 months in 2026 if the
+      person was eligible then), and point to community-clinic / "find care now"
+      options to bridge the wait — so the person applies now but does not wait on
+      the card to get seen.
+
   - id: actionability
     name: Concrete, do-this-now next steps
-    weight: 15
+    weight: 10
     critical: false
     description: >
       Each recommended program must say WHERE to apply (e.g., BenefitsCal,

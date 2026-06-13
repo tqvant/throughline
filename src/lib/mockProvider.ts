@@ -53,7 +53,7 @@ function programEntry(id: string, name: string, why: string): PlanProgram {
     estimatedValue: id === 'medi_cal_adults' ? '$0 monthly premium' : 'Reduces or eliminates your cost',
     applicationDraft:
       id === 'medi_cal_adults'
-        ? 'Applicant: [your name]. Household size: 3. Current monthly income: $1,800 (report CURRENT income, not last year). Reason for change: job loss. Prior coverage ended: 2026-05-22. Requesting Medi-Cal coverage effective immediately. Children in household: yes — please also enroll them.'
+        ? 'Applicant: [your name]. Household size: 3. Current monthly income: $1,800 (report CURRENT income, not last year). Reason for change: job loss. Prior coverage ended: 2026-05-22. Requesting Medi-Cal starting as soon as eligible, including any retroactive coverage I qualify for. Children in household: yes — please also enroll them.'
         : undefined,
   };
 }
@@ -74,8 +74,8 @@ function buildPlan(situation: Situation, full: boolean): Plan {
     ? [
         {
           title: 'Apply for Medi-Cal today based on your CURRENT income',
-          why: 'Medi-Cal looks at your income right now, not last year. With little income this month you very likely qualify for $0 coverage immediately.',
-          deadline: 'Today — coverage can be backdated, so do not wait.',
+          why: 'Medi-Cal looks at your income right now, not last year — so with little income this month you very likely qualify for $0 coverage. Approval can take a few weeks (up to ~45 days), but coverage can be backdated up to ~3 months (2026) if you were eligible then. Apply now, and use the free/sliding-scale clinics under "Find care now" to get seen while you wait.',
+          deadline: 'Apply now — coverage can be backdated, so do not wait on the card to get care.',
         },
         {
           title: 'Mark your 60-day enrollment deadline',
@@ -92,7 +92,7 @@ function buildPlan(situation: Situation, full: boolean): Plan {
 
   return {
     summary: full
-      ? 'Losing coverage between jobs is stressful, but you have more options than it feels like right now. Based on your current income, the fastest path is almost certainly free Medi-Cal today, with community-clinic care covering you in the meantime.'
+      ? 'Losing coverage between jobs is stressful, but you have more options than it feels like right now. Based on your current income, the strongest path is free Medi-Cal — apply today. Approval takes a few weeks but can be backdated, and community clinics can see you in the meantime, so you are not left without care while you wait.'
       : 'Here are some health-coverage options you can look into while you are between jobs.',
     urgentActions,
     programs,
@@ -148,6 +148,11 @@ export const mockProvider: NavigatorProvider = {
     const needsDeadline = ground.flags.includes('sep_60_day');
     const deadlineOk = !needsDeadline || text.includes('60') || text.includes('special enrollment');
 
+    // Realistic timing: must not claim "immediate" coverage; must set expectations.
+    const overstates = text.includes('immediately') || text.includes('instant');
+    const setsTimeline = /week|backdat|retroactive|45 day|in the meantime|bridge/.test(text);
+    const timelineOk = !overstates && setsTimeline;
+
     const actionable = plan.programs.every(
       (p) => p.howToApply.length > 0 && p.documentsNeeded.length > 0,
     );
@@ -190,6 +195,19 @@ export const mockProvider: NavigatorProvider = {
         deadlineOk,
         deadlineOk ? 'Deadlines addressed (or not applicable).' : 'The 60-day Special Enrollment / COBRA window is not called out.',
         deadlineOk ? undefined : 'Add an urgent action noting the 60-day Special Enrollment Period and COBRA election window.',
+      ),
+      result(
+        'realistic_timeline',
+        timelineOk ? 1 : 0,
+        timelineOk,
+        timelineOk
+          ? 'Sets realistic expectations (approval takes time; coverage can be backdated; bridge the wait).'
+          : overstates
+            ? 'Overstates approval speed — claims coverage is immediate/instant.'
+            : 'Does not set expectations about how long approval and finding a provider take.',
+        timelineOk
+          ? undefined
+          : 'Do not say coverage is immediate. Note approval can take ~weeks, that it can be backdated, and that community clinics bridge the wait.',
       ),
       result('actionability', actionable ? 1 : 0.5, actionable, actionable ? 'Each program has where-to-apply and documents.' : 'Some programs lack how-to-apply detail.'),
       result('safety_navigation_only', plan.disclaimer ? 1 : 0, !!plan.disclaimer, plan.disclaimer ? 'Navigation-only disclaimer present.' : 'No disclaimer.'),
