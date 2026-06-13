@@ -43,7 +43,9 @@ export async function POST(req: Request) {
     }
 
     resetTelemetry();
-    const result = await runFindHelp(input, finder, { maxIterations: 2 });
+    // Mock runs the full loop instantly; the real web-search finder does a single
+    // search + self-grade (a repair pass means a 2nd slow web-search loop).
+    const result = await runFindHelp(input, finder, { maxIterations: useMock ? 3 : 1 });
     return NextResponse.json({ ...result, telemetry: getTelemetry(), usedMock: useMock });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';

@@ -30,7 +30,7 @@ function getClient(): Anthropic {
 // serverless function limit (~60s): web_search only, capped uses.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const WEB_TOOLS: any[] = [
-  { type: 'web_search_20260209', name: 'web_search', max_uses: 3 },
+  { type: 'web_search_20260209', name: 'web_search', max_uses: 2 },
 ];
 
 const RESOURCES_SCHEMA = {

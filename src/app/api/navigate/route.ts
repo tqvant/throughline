@@ -53,7 +53,8 @@ export async function POST(req: Request) {
     }
 
     resetTelemetry();
-    const result = await runNavigator(situation, provider, { maxIterations: 3 });
+    // Real Opus mostly passes first try; cap at one repair to bound latency.
+    const result = await runNavigator(situation, provider, { maxIterations: useMock ? 3 : 2 });
     return NextResponse.json({ ...result, telemetry: getTelemetry(), usedMock: useMock });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
