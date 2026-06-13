@@ -51,6 +51,10 @@ function programEntry(id: string, name: string, why: string): PlanProgram {
     howToApply: WHERE_TO_APPLY[id] ?? 'Contact the program office to apply.',
     documentsNeeded: DOCS[id] ?? ['Photo ID', 'Proof of income'],
     estimatedValue: id === 'medi_cal_adults' ? '$0 monthly premium' : 'Reduces or eliminates your cost',
+    applicationDraft:
+      id === 'medi_cal_adults'
+        ? 'Applicant: [your name]. Household size: 3. Current monthly income: $1,800 (report CURRENT income, not last year). Reason for change: job loss. Prior coverage ended: 2026-05-22. Requesting Medi-Cal coverage effective immediately. Children in household: yes — please also enroll them.'
+        : undefined,
   };
 }
 
@@ -98,6 +102,13 @@ function buildPlan(situation: Situation, full: boolean): Plan {
         sayThis: 'Hi, I recently lost my job and my health coverage. I\'d like to apply for Medi-Cal based on my current monthly income.',
       },
     ],
+    appointmentRequest: full
+      ? {
+          to: 'Local community health center (FQHC) — intake line',
+          subject: 'New patient appointment — currently uninsured',
+          body: 'Hello, I recently lost my health coverage and am applying for Medi-Cal. I\'d like to schedule a sliding-scale appointment as a new patient while my application processes. I can bring photo ID and proof of income. What is your earliest availability, and what should I bring? Thank you.',
+        }
+      : undefined,
     disclaimer:
       'Throughline helps you find and apply for benefits you may qualify for. It is not medical advice and does not diagnose or treat any condition. Final eligibility is determined by each program.',
   };

@@ -18,6 +18,12 @@ import type {
 } from './types';
 import { loadRubric } from './rubric';
 import { recordCall } from './telemetry';
+import { languageName } from './i18n';
+
+function languageInstruction(code?: string): string {
+  if (!code || code === 'en') return '';
+  return `\nWrite ALL user-facing text (summary, titles, why, how-to-apply, documents, scripts, application drafts, the appointment message) in ${languageName(code)}. Keep official program/agency names, URLs, and dates as-is.`;
+}
 
 const MODEL = process.env.BRIDGE_MODEL || 'claude-opus-4-8';
 
@@ -73,6 +79,10 @@ const PLAN_SCHEMA = {
           howToApply: { type: 'string', description: 'WHERE to apply and HOW.' },
           documentsNeeded: { type: 'array', items: { type: 'string' } },
           estimatedValue: { type: 'string', description: 'e.g. "$0 premium" or "saves ~$650/mo vs COBRA".' },
+          applicationDraft: {
+            type: 'string',
+            description: 'Ready-to-paste answers for this program\'s application, filled in from the situation.',
+          },
         },
         required: ['name', 'whatItIs', 'whyYouQualify', 'howToApply', 'documentsNeeded', 'estimatedValue'],
       },
@@ -87,6 +97,16 @@ const PLAN_SCHEMA = {
         },
         required: ['whenToUse', 'sayThis'],
       },
+    },
+    appointmentRequest: {
+      type: 'object',
+      description: 'A ready-to-send message requesting a new-patient appointment or callback.',
+      properties: {
+        to: { type: 'string' },
+        subject: { type: 'string' },
+        body: { type: 'string' },
+      },
+      required: ['to', 'subject', 'body'],
     },
     disclaimer: { type: 'string' },
   },
@@ -168,10 +188,11 @@ export const anthropicProvider: NavigatorProvider = {
       'You are Throughline, a calm, expert benefits navigator for people who just lost their health coverage between jobs.',
       'Your job is BENEFITS NAVIGATION ONLY: figure out which programs the person likely qualifies for and how to enroll. You must NEVER diagnose, recommend treatments or medications, or give clinical/medical advice.',
       'You are NOT given the answer — reason out eligibility yourself from the rules below. Do not invent programs or thresholds. Do not tell someone to apply for a program they clearly do not qualify for.',
+      'Act as a concierge who does the paperwork for them — they are busy job-hunting. For each program, fill in a ready-to-paste applicationDraft using their situation. Also write one appointmentRequest message they can send to a clinic/office to get seen. Keep call scripts.',
       'Write in plain, encouraging language. Always include the safety-net options (community health center, prescription assistance) and a short disclaimer.',
       '',
       PROGRAM_REFERENCE,
-    ].join('\n');
+    ].join('\n') + languageInstruction(input.situation.language);
     return callTool<Plan>({
       system,
       user: `Here is the person's situation. Produce their benefits action plan.\n\n${situationText(input)}`,
@@ -212,7 +233,7 @@ export const anthropicProvider: NavigatorProvider = {
       'Benefits navigation only — no medical advice. Do not invent programs or thresholds.',
       '',
       PROGRAM_REFERENCE,
-    ].join('\n');
+    ].join('\n') + languageInstruction(input.situation.language);
     const failuresText = input.failures
       .map((f) => `- [${f.id}] ${f.reasoning}${f.fix ? `\n  FIX: ${f.fix}` : ''}`)
       .join('\n');

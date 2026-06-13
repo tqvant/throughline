@@ -14,6 +14,7 @@ function normalize(raw: unknown): FindHelpInput {
     location: str(b.location, 'California') || 'California',
     need: str(b.need, 'urgent care while uninsured'),
     notes: typeof b.notes === 'string' ? b.notes.slice(0, 500) : undefined,
+    language: typeof b.language === 'string' ? b.language : undefined,
   };
 }
 

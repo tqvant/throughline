@@ -8,7 +8,9 @@ passes. Two modes, same spine:
 
 - **Plan my coverage** — what you qualify for (Medi-Cal, subsidized marketplace,
   the income-drop pathway). Verified against a deterministic eligibility engine
-  built on public Federal Poverty Level data + `rubric.yaml`.
+  built on public Federal Poverty Level data + `rubric.yaml`. A **Concierge**
+  drafts each application, the appointment message, and call scripts into a
+  review-&-approve checklist — you tap to submit/call, you stay the signer.
 - **Find care now** — the deadly gap *before* coverage kicks in: an agent
   searches the **live web** (server-side `web_search`) for local, free/low-cost,
   immediate-care resources — free clinics, mobile units, prescription help, and
@@ -17,6 +19,14 @@ passes. Two modes, same spine:
 
 Built at Claude Build Day. See [`BRIEF.md`](./BRIEF.md) for the problem, the
 rubrics, and the definition of done.
+
+**Languages:** the generated guidance (plans, resources, call scripts,
+application drafts) is produced in the user's language; the UI ships localized in
+English, Spanish, Chinese, Vietnamese, and Tagalog (California's top threshold
+languages). See [`src/lib/i18n.ts`](./src/lib/i18n.ts).
+
+**Sustainability:** free for users; engineered to cost little per person (the
+eligibility core is deterministic = $0). See [FUNDING.md](./FUNDING.md).
 
 **Model:** defaults to `claude-opus-4-8`; set `BRIDGE_MODEL=claude-fable-5` to
 run on Fable 5 (both support the `web_search_20260209` server tool). The rest of

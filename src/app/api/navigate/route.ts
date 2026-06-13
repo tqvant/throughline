@@ -26,6 +26,7 @@ function normalize(raw: unknown): Situation {
     pregnant: Boolean(b.pregnant),
     lostCoverageDate: typeof b.lostCoverageDate === 'string' ? b.lostCoverageDate : undefined,
     notes: typeof b.notes === 'string' ? b.notes.slice(0, 500) : undefined,
+    language: typeof b.language === 'string' ? b.language : undefined,
   };
 }
 

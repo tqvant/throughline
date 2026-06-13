@@ -16,6 +16,8 @@ export interface Situation {
   /** ISO date the job-based coverage ended (or will end), if known. */
   lostCoverageDate?: string;
   notes?: string;
+  /** Language code for the generated, user-facing content (e.g. "es"). */
+  language?: string;
 }
 
 export type EligibilityStatus =
@@ -74,6 +76,8 @@ export interface PlanProgram {
   howToApply: string;
   documentsNeeded: string[];
   estimatedValue: string;
+  /** Concierge: ready-to-paste answers for this program's application. */
+  applicationDraft?: string;
 }
 
 export interface PlanScript {
@@ -81,11 +85,19 @@ export interface PlanScript {
   sayThis: string;
 }
 
+/** Concierge: a ready-to-send message requesting an appointment / callback. */
+export interface AppointmentRequest {
+  to: string;
+  subject: string;
+  body: string;
+}
+
 export interface Plan {
   summary: string;
   urgentActions: PlanAction[];
   programs: PlanProgram[];
   scripts: PlanScript[];
+  appointmentRequest?: AppointmentRequest;
   disclaimer: string;
 }
 
@@ -207,6 +219,8 @@ export interface FindHelpInput {
   need: string;
   /** Optional extra context (e.g. "uninsured until Aug 1", "need insulin"). */
   notes?: string;
+  /** Language code for the generated, user-facing content (e.g. "es"). */
+  language?: string;
 }
 
 export interface HelpFinder {

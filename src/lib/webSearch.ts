@@ -6,6 +6,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { HELP_RUBRIC } from './findHelp';
 import { recordCall } from './telemetry';
+import { languageName } from './i18n';
 import type {
   CriterionResult,
   FindHelpInput,
@@ -144,11 +145,16 @@ async function gatherFromWeb(prompt: string): Promise<string> {
 }
 
 async function extractResources(notes: string, input: FindHelpInput): Promise<HelpResource[]> {
+  const langLine =
+    input.language && input.language !== 'en'
+      ? ` Write the description and whyItHelps fields in ${languageName(input.language)}; keep names, addresses, phone numbers, and URLs as-is.`
+      : '';
   const res = await getClient().messages.create({
     model: MODEL,
     max_tokens: 3000,
     system:
-      'Turn the research notes into a structured list of resources. Only include resources actually supported by the notes; do not invent any. Preserve the source URL for each.',
+      'Turn the research notes into a structured list of resources. Only include resources actually supported by the notes; do not invent any. Preserve the source URL for each.' +
+      langLine,
     messages: [
       {
         role: 'user',
