@@ -30,7 +30,8 @@ function getClient(): Anthropic {
 // serverless function limit (~60s): web_search only, capped uses.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const WEB_TOOLS: any[] = [
-  { type: 'web_search_20260209', name: 'web_search', max_uses: 2 },
+  { type: 'web_search_20260209', name: 'web_search', max_uses: 3 },
+  { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 3 },
 ];
 
 const RESOURCES_SCHEMA = {
@@ -129,7 +130,7 @@ async function gatherFromWeb(prompt: string): Promise<string> {
   recordCall(MODEL, response.usage, countWebSearches(response.content));
   // Server-side tools pause the turn when they hit their per-turn cap; resume.
   let guard = 0;
-  while (response.stop_reason === 'pause_turn' && guard < 3) {
+  while (response.stop_reason === 'pause_turn' && guard < 5) {
     messages.push({ role: 'assistant', content: response.content });
     response = await c.messages.create({
       model: MODEL,
@@ -153,7 +154,7 @@ async function extractResources(notes: string, input: FindHelpInput): Promise<He
     model: MODEL,
     max_tokens: 3000,
     system:
-      'Turn the research notes into a structured list of resources. Only include resources actually supported by the notes; do not invent any. Preserve the source URL for each.' +
+      'Turn the research notes into a structured list of resources. Only include resources actually supported by the notes; do not invent any. For EVERY resource you MUST include a sourceUrl (the web page / listing it came from — the user needs a working link) and a cost level (free, sliding_scale, low_cost, or unknown). Include a phone number and address whenever the notes provide them. Drop any resource you cannot attach a sourceUrl to.' +
       langLine,
     messages: [
       {
