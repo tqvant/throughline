@@ -42,9 +42,11 @@ export async function POST(req: Request) {
     }
 
     resetTelemetry();
-    // Cap iterations so the live web-search loop stays within the serverless
-    // function time limit (~60s): initial search + at most one repair.
-    const result = await runFindHelp(input, finder, { maxIterations: 2 });
+    // The live web_search loop is slow; with a real key (web finder) do a single
+    // search + self-grade to stay within the ~60s serverless limit. The mock
+    // finder is instant, so it keeps the full search→grade→repair demo.
+    const maxIterations = useMock ? 3 : 1;
+    const result = await runFindHelp(input, finder, { maxIterations });
     return NextResponse.json({ ...result, telemetry: getTelemetry(), usedMock: useMock });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
