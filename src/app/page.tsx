@@ -707,25 +707,70 @@ function FindCareNow({ admin, lang, demo }: { admin: boolean; lang: string; demo
   );
 }
 
+function resKey(r: HelpResource): string {
+  return `${r.name}|${r.sourceUrl ?? r.phone ?? ''}`;
+}
+
 function ResourceActionList({ resources }: { resources: HelpResource[] }) {
-  const [done, setDone] = useState<Set<number>>(new Set());
-  const toggle = (i: number) =>
+  const [done, setDone] = useState<Set<string>>(new Set());
+  const [kindFilter, setKindFilter] = useState<string>('all');
+  const [freeOnly, setFreeOnly] = useState(false);
+
+  const toggle = (k: string) =>
     setDone((d) => {
       const n = new Set(d);
-      if (n.has(i)) n.delete(i);
-      else n.add(i);
+      if (n.has(k)) n.delete(k);
+      else n.add(k);
       return n;
     });
+
+  // Distinct kinds present, in first-seen order, for the filter chips.
+  const kinds = useMemo(() => {
+    const seen: string[] = [];
+    for (const r of resources) if (!seen.includes(r.kind)) seen.push(r.kind);
+    return seen;
+  }, [resources]);
+
+  const shown = resources.filter(
+    (r) =>
+      (kindFilter === 'all' || r.kind === kindFilter) &&
+      (!freeOnly || r.cost === 'free' || r.cost === 'sliding_scale' || r.cost === 'low_cost'),
+  );
   const pct = resources.length ? Math.round((done.size / resources.length) * 100) : 0;
+
   return (
     <>
       <div className="ap-progress">
         <div className="ap-bar" style={{ width: `${pct}%` }} />
       </div>
       <div className="ap-foot">{done.size} of {resources.length} contacted</div>
-      {resources.map((res, i) => (
-        <ResourceCard key={i} r={res} done={done.has(i)} onToggle={() => toggle(i)} />
-      ))}
+
+      {(kinds.length > 1 || resources.some((r) => r.cost === 'unknown')) && (
+        <div className="filter-row">
+          <button className={`chip ${kindFilter === 'all' ? 'on' : ''}`} onClick={() => setKindFilter('all')}>
+            All
+          </button>
+          {kinds.map((k) => (
+            <button key={k} className={`chip ${kindFilter === k ? 'on' : ''}`} onClick={() => setKindFilter(k)}>
+              {KIND_LABELS[k] ?? k}
+            </button>
+          ))}
+          <button className={`chip cost ${freeOnly ? 'on' : ''}`} onClick={() => setFreeOnly((f) => !f)}>
+            $ free / low-cost
+          </button>
+        </div>
+      )}
+
+      {shown.length === 0 ? (
+        <div className="empty" style={{ padding: '20px 8px' }}>
+          No options match that filter. <button className="linklike" onClick={() => { setKindFilter('all'); setFreeOnly(false); }}>Clear filter</button>
+        </div>
+      ) : (
+        shown.map((res) => {
+          const k = resKey(res);
+          return <ResourceCard key={k} r={res} done={done.has(k)} onToggle={() => toggle(k)} />;
+        })
+      )}
     </>
   );
 }
