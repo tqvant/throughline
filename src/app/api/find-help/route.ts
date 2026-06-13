@@ -42,7 +42,9 @@ export async function POST(req: Request) {
     }
 
     resetTelemetry();
-    const result = await runFindHelp(input, finder);
+    // Cap iterations so the live web-search loop stays within the serverless
+    // function time limit (~60s): initial search + at most one repair.
+    const result = await runFindHelp(input, finder, { maxIterations: 2 });
     return NextResponse.json({ ...result, telemetry: getTelemetry(), usedMock: useMock });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';

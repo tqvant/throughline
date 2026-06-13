@@ -26,11 +26,11 @@ function getClient(): Anthropic {
   return client;
 }
 
-// Server-side web tools. SDK accepts these plain literals; typed loosely here.
+// Server-side web tools. Kept lean so the whole loop finishes within the
+// serverless function limit (~60s): web_search only, capped uses.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const WEB_TOOLS: any[] = [
-  { type: 'web_search_20260209', name: 'web_search', max_uses: 6 },
-  { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 4 },
+  { type: 'web_search_20260209', name: 'web_search', max_uses: 3 },
 ];
 
 const RESOURCES_SCHEMA = {
@@ -121,7 +121,7 @@ async function gatherFromWeb(prompt: string): Promise<string> {
   const messages: any[] = [{ role: 'user', content: prompt }];
   let response = await c.messages.create({
     model: MODEL,
-    max_tokens: 4096,
+    max_tokens: 2800,
     system: SEARCH_SYSTEM,
     tools: WEB_TOOLS,
     messages,
@@ -129,7 +129,7 @@ async function gatherFromWeb(prompt: string): Promise<string> {
   recordCall(MODEL, response.usage, countWebSearches(response.content));
   // Server-side tools pause the turn when they hit their per-turn cap; resume.
   let guard = 0;
-  while (response.stop_reason === 'pause_turn' && guard < 6) {
+  while (response.stop_reason === 'pause_turn' && guard < 3) {
     messages.push({ role: 'assistant', content: response.content });
     response = await c.messages.create({
       model: MODEL,
